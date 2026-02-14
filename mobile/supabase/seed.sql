@@ -1,0 +1,2 @@
+-- Seed data is created via the app's bootstrap flow.
+-- This file is intentionally minimal for local development.
