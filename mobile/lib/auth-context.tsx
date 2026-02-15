@@ -27,9 +27,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('user_id', userId)
       .eq('active', true)
       .limit(1)
-      .single();
+      .single<BusinessUser>();
 
-    setBusinessUser(data);
+    setBusinessUser(data ?? null);
   }, []);
 
   const refreshBusinessUser = useCallback(async () => {

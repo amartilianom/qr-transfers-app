@@ -9,14 +9,32 @@ alter table public.invite enable row level security;
 alter table public.transfer enable row level security;
 
 -- ============================================================
+-- Helper: get current user's business_user record
+-- Returns the active business_user record for the current auth user
+-- Uses security definer to bypass RLS and prevent infinite recursion
+-- ============================================================
+create or replace function public.my_business_user()
+returns table(id uuid, business_id uuid, role user_role) as $$
+begin
+  return query
+    select bu.id, bu.business_id, bu.role
+    from public.business_user bu
+    where bu.user_id = auth.uid() and bu.active = true
+    limit 1;
+end;
+$$ language plpgsql security definer stable;
+
+-- ============================================================
 -- Helper: get accessible branch IDs for current user
 -- Admin → all active branches in their business
 -- Collaborator → only assigned branches
+-- OPTIMIZED: Returns uuid[] instead of setof uuid for better performance
 -- ============================================================
 create or replace function public.my_branch_ids()
-returns setof uuid as $$
+returns uuid[] as $$
 declare
   v_bu record;
+  v_branch_ids uuid[];
 begin
   select id, business_id, role into v_bu
     from public.business_user
@@ -24,18 +42,20 @@ begin
     limit 1;
 
   if v_bu is null then
-    return;
+    return array[]::uuid[];
   end if;
 
   if v_bu.role = 'admin' then
-    return query
-      select b.id from public.branch b
+    select array_agg(b.id) into v_branch_ids
+      from public.branch b
       where b.business_id = v_bu.business_id and b.active = true;
   else
-    return query
-      select bub.branch_id from public.business_user_branch bub
+    select array_agg(bub.branch_id) into v_branch_ids
+      from public.business_user_branch bub
       where bub.business_user_id = v_bu.id;
   end if;
+
+  return coalesce(v_branch_ids, array[]::uuid[]);
 end;
 $$ language plpgsql security definer stable;
 
@@ -65,7 +85,7 @@ create policy "Authenticated can insert business"
 -- ============================================================
 create policy "Users see accessible branches"
   on public.branch for select
-  using (id in (select public.my_branch_ids()));
+  using (id = ANY(public.my_branch_ids()));
 
 create policy "Admins insert branches"
   on public.branch for insert
@@ -91,8 +111,7 @@ create policy "Users see own membership"
 create policy "Admins see all memberships"
   on public.business_user for select
   using (business_id in (
-    select business_id from public.business_user
-    where user_id = auth.uid() and role = 'admin' and active = true
+    select business_id from public.my_business_user() where role = 'admin'
   ));
 
 create policy "Insert own membership"
@@ -103,8 +122,7 @@ create policy "Admins update memberships"
   on public.business_user for update
   using (
     business_id in (
-      select business_id from public.business_user
-      where user_id = auth.uid() and role = 'admin' and active = true
+      select business_id from public.my_business_user() where role = 'admin'
     )
     or user_id = auth.uid()
   );
@@ -115,29 +133,25 @@ create policy "Admins update memberships"
 create policy "Users see own branch assignments"
   on public.business_user_branch for select
   using (business_user_id in (
-    select id from public.business_user where user_id = auth.uid()
+    select id from public.my_business_user()
   ));
 
 create policy "Admins manage branch assignments"
   on public.business_user_branch for insert
   with check (business_user_id in (
     select bu2.id from public.business_user bu2
-    inner join public.business_user admin_bu
-      on admin_bu.business_id = bu2.business_id
-    where admin_bu.user_id = auth.uid()
-      and admin_bu.role = 'admin'
-      and admin_bu.active = true
+    inner join public.my_business_user() my_bu
+      on my_bu.business_id = bu2.business_id
+    where my_bu.role = 'admin'
   ));
 
 create policy "Admins delete branch assignments"
   on public.business_user_branch for delete
   using (business_user_id in (
     select bu2.id from public.business_user bu2
-    inner join public.business_user admin_bu
-      on admin_bu.business_id = bu2.business_id
-    where admin_bu.user_id = auth.uid()
-      and admin_bu.role = 'admin'
-      and admin_bu.active = true
+    inner join public.my_business_user() my_bu
+      on my_bu.business_id = bu2.business_id
+    where my_bu.role = 'admin'
   ));
 
 -- ============================================================
@@ -145,15 +159,15 @@ create policy "Admins delete branch assignments"
 -- ============================================================
 create policy "Users see transfers for their branches"
   on public.transfer for select
-  using (branch_id in (select public.my_branch_ids()) and active = true);
+  using (branch_id = ANY(public.my_branch_ids()) and active = true);
 
 create policy "Users insert transfers for their branches"
   on public.transfer for insert
-  with check (branch_id in (select public.my_branch_ids()));
+  with check (branch_id = ANY(public.my_branch_ids()));
 
 create policy "Users update own transfers"
   on public.transfer for update
-  using (created_by = auth.uid() and branch_id in (select public.my_branch_ids()));
+  using (created_by = auth.uid() and branch_id = ANY(public.my_branch_ids()));
 
 -- ============================================================
 -- Invite policies

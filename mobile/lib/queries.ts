@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { TransferInsert, TransferProvider, UserRole } from '@/types/database';
+import { Transfer, Branch, BusinessUser, Invite, TransferProvider, UserRole } from '@/types/database';
 
 // ============================================================
 // Transfers
@@ -15,11 +15,20 @@ export async function getTodayTransfers(branchId: string) {
     .eq('branch_id', branchId)
     .gte('occurred_at', startOfDay.toISOString())
     .eq('active', true)
-    .order('occurred_at', { ascending: false });
+    .order('occurred_at', { ascending: false })
+    .returns<Transfer[]>();
 }
 
-export async function createTransfer(data: TransferInsert) {
-  return supabase.from('transfer').insert(data).select().single();
+export async function createTransfer(data: {
+  branch_id: string;
+  created_by: string;
+  amount: number;
+  provider: TransferProvider;
+  transaction_id?: string | null;
+  receipt_path?: string | null;
+  occurred_at?: string;
+}) {
+  return supabase.from('transfer').insert(data).select().single<Transfer>();
 }
 
 export async function checkDuplicateTransactionId(txnId: string, branchId: string) {
@@ -54,7 +63,8 @@ export async function getBranches() {
     .from('branch')
     .select('*')
     .eq('active', true)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true })
+    .returns<Branch[]>();
 }
 
 export async function createBranch(businessId: string, name: string) {
@@ -62,7 +72,7 @@ export async function createBranch(businessId: string, name: string) {
     .from('branch')
     .insert({ business_id: businessId, name })
     .select()
-    .single();
+    .single<Branch>();
 }
 
 export async function updateBranch(branchId: string, updates: { name?: string; active?: boolean }) {
@@ -80,7 +90,7 @@ export async function getBusinessUser(userId: string) {
     .eq('user_id', userId)
     .eq('active', true)
     .limit(1)
-    .single();
+    .single<BusinessUser>();
 }
 
 export async function updateLastBranch(businessUserId: string, branchId: string) {
@@ -109,5 +119,5 @@ export async function createInvite(
       branch_ids: branchIds,
     })
     .select()
-    .single();
+    .single<Invite>();
 }

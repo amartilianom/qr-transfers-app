@@ -28,7 +28,8 @@ export function BranchProvider({ children }: { children: React.ReactNode }) {
       .from('branch')
       .select('*')
       .eq('active', true)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: true })
+      .returns<Branch[]>();
 
     const branchList = data ?? [];
     setBranches(branchList);
