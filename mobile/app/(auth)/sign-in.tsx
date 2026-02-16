@@ -9,7 +9,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { colors, fonts, radii } from '@/lib/theme';
 
@@ -18,6 +18,7 @@ export default function SignInScreen() {
   const [loading, setLoading] = useState(false);
   const { signInWithOtp } = useAuth();
   const router = useRouter();
+  const { role } = useLocalSearchParams<{ role?: 'admin' | 'cashier' }>();
 
   const fullPhone = `+57${phone.replace(/\D/g, '')}`;
 
@@ -37,7 +38,13 @@ export default function SignInScreen() {
       return;
     }
 
-    router.push({ pathname: '/(auth)/verify', params: { phone: fullPhone } });
+    router.push({
+      pathname: '/(auth)/verify',
+      params: {
+        phone: fullPhone,
+        role: role || 'existing',
+      },
+    });
   }
 
   return (

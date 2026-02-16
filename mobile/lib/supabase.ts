@@ -12,23 +12,25 @@ const ExpoSecureStoreAdapter = {
 
 // Storage adapter for web (localStorage)
 const LocalStorageAdapter = {
-  getItem: (key: string) => {
+  getItem: async (key: string) => {
     if (typeof window === 'undefined') return null;
-    return Promise.resolve(window.localStorage.getItem(key));
+    return window.localStorage.getItem(key);
   },
-  setItem: (key: string, value: string) => {
-    if (typeof window === 'undefined') return Promise.resolve();
+  setItem: async (key: string, value: string) => {
+    if (typeof window === 'undefined') return;
     window.localStorage.setItem(key, value);
-    return Promise.resolve();
   },
-  removeItem: (key: string) => {
-    if (typeof window === 'undefined') return Promise.resolve();
+  removeItem: async (key: string) => {
+    if (typeof window === 'undefined') return;
     window.localStorage.removeItem(key);
-    return Promise.resolve();
   },
 };
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+// Use localhost for web, network IP for mobile
+const supabaseUrl = Platform.OS === 'web'
+  ? 'http://127.0.0.1:54321'
+  : process.env.EXPO_PUBLIC_SUPABASE_URL!;
+
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
 // Use appropriate storage adapter based on platform

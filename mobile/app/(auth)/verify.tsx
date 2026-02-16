@@ -9,15 +9,16 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { colors, fonts, radii } from '@/lib/theme';
 
 export default function VerifyScreen() {
-  const { phone } = useLocalSearchParams<{ phone: string }>();
+  const { phone, role } = useLocalSearchParams<{ phone: string; role?: string }>();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const { verifyOtp } = useAuth();
+  const { verifyOtp, refreshBusinessUser } = useAuth();
+  const router = useRouter();
 
   async function handleVerify() {
     if (code.length < 6) {
@@ -27,12 +28,26 @@ export default function VerifyScreen() {
 
     setLoading(true);
     const { error } = await verifyOtp(phone!, code);
-    setLoading(false);
 
     if (error) {
+      setLoading(false);
       Alert.alert('Error', error.message);
+      return;
     }
-    // On success, onAuthStateChange in AuthProvider fires → AuthGate redirects
+
+    // Refresh business user data
+    await refreshBusinessUser();
+    setLoading(false);
+
+    // Route based on role
+    if (role === 'admin') {
+      // New admin → create business
+      router.replace('/bootstrap');
+    } else if (role === 'cashier') {
+      // New cashier → check invite
+      router.replace('/cashier-invite');
+    }
+    // else: existing user → AuthGate will handle routing
   }
 
   return (
