@@ -1,10 +1,12 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '@/lib/auth-context';
 import { colors, fonts, radii, shadows } from '@/lib/theme';
 
 export default function AdminScreen() {
   const router = useRouter();
+  const { signOut } = useAuth();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -25,6 +27,14 @@ export default function AdminScreen() {
         >
           <Text style={styles.cardTitle}>Invitar usuarios</Text>
           <Text style={styles.cardSubtitle}>Generar enlace de invitación</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.signOutButton}
+          onPress={() => signOut()}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.signOutText}>Cerrar sesión</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -56,5 +66,15 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontSize: 14,
     color: colors.secondary,
+  },
+  signOutButton: {
+    marginTop: 8,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  signOutText: {
+    fontFamily: fonts.medium,
+    fontSize: 15,
+    color: colors.error,
   },
 });

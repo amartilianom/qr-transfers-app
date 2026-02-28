@@ -5,6 +5,16 @@ import { Transfer, Branch, BusinessUser, Invite, TransferProvider, UserRole } fr
 // Transfers
 // ============================================================
 
+export async function getTransferHistory(branchId: string) {
+  return supabase
+    .from('transfer')
+    .select('*')
+    .eq('branch_id', branchId)
+    .eq('active', true)
+    .order('occurred_at', { ascending: false })
+    .returns<Transfer[]>();
+}
+
 export async function getTodayTransfers(branchId: string) {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);

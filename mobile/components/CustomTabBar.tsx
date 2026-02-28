@@ -6,51 +6,44 @@ import { colors, fonts, radii, shadows } from '@/lib/theme';
 export default function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const router = useRouter();
 
+  // Expo Router transforms `href: null` into `tabBarItemStyle: { display: 'none' }`
+  const visibleRoutes = state.routes.filter(
+    (route) => (descriptors[route.key].options.tabBarItemStyle as any)?.display !== 'none',
+  );
+
+  const mid = Math.ceil(visibleRoutes.length / 2);
+  const leftRoutes = visibleRoutes.slice(0, mid);
+  const rightRoutes = visibleRoutes.slice(mid);
+
+  function renderTab(route: (typeof visibleRoutes)[0]) {
+    const { options } = descriptors[route.key];
+    const label = (options.tabBarLabel ?? options.title ?? route.name) as string;
+    const isFocused = state.index === state.routes.indexOf(route);
+
+    function onPress() {
+      const event = navigation.emit({
+        type: 'tabPress',
+        target: route.key,
+        canPreventDefault: true,
+      });
+      if (!isFocused && !event.defaultPrevented) {
+        navigation.navigate(route.name);
+      }
+    }
+
+    return (
+      <TouchableOpacity key={route.key} style={styles.tab} onPress={onPress} activeOpacity={0.7}>
+        <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>{label}</Text>
+      </TouchableOpacity>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      {/* Tab items on the left and right, FAB in the center */}
       <View style={styles.bar}>
-        {state.routes.map((route, index) => {
-          const { options } = descriptors[route.key];
-          const label = (options.tabBarLabel ?? options.title ?? route.name) as string;
-          const isFocused = state.index === index;
-
-          // Insert FAB spacer before the second tab
-          const isSecondHalf = index >= Math.ceil(state.routes.length / 2);
-
-          function onPress() {
-            const event = navigation.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            });
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name);
-            }
-          }
-
-          return (
-            <View key={route.key} style={styles.tabWrapper}>
-              {isSecondHalf && index === Math.ceil(state.routes.length / 2) && (
-                <View style={styles.fabSpacer} />
-              )}
-              <TouchableOpacity
-                style={styles.tab}
-                onPress={onPress}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.tabLabel,
-                    isFocused && styles.tabLabelActive,
-                  ]}
-                >
-                  {label}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          );
-        })}
+        <View style={styles.leftGroup}>{leftRoutes.map(renderTab)}</View>
+        <View style={styles.fabSpacer} />
+        <View style={styles.rightGroup}>{rightRoutes.map(renderTab)}</View>
       </View>
 
       {/* Floating Action Button */}
@@ -75,13 +68,20 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     paddingTop: 12,
     paddingHorizontal: 24,
-    justifyContent: 'space-around',
     alignItems: 'center',
     ...shadows.medium,
     shadowOffset: { width: 0, height: -4 },
   },
-  tabWrapper: {
+  leftGroup: {
+    flex: 1,
     flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  rightGroup: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
     alignItems: 'center',
   },
   tab: {
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    top: -28,
+    top: -48,
     alignSelf: 'center',
     width: 56,
     height: 56,

@@ -5,27 +5,24 @@ import {
   FlatList,
   StyleSheet,
   RefreshControl,
-  TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useBranch } from '@/lib/branch-context';
-import { useAuth } from '@/lib/auth-context';
 import { getTodayTransfers } from '@/lib/queries';
 import { Transfer } from '@/types/database';
 import HeroCard from '@/components/HeroCard';
 import TransferCard from '@/components/TransferCard';
 import BranchPicker from '@/components/BranchPicker';
+import AppHeader from '@/components/AppHeader';
 import { colors, fonts } from '@/lib/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
-  const { currentBranch, branches, needsPicker } = useBranch();
-  const { signOut } = useAuth();
+  const { currentBranch, needsPicker } = useBranch();
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [pickerVisible, setPickerVisible] = useState(false);
 
   const todayTotal = transfers.reduce((sum, t) => sum + Number(t.amount), 0);
 
@@ -62,23 +59,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => branches.length > 1 && setPickerVisible(true)}
-          activeOpacity={branches.length > 1 ? 0.7 : 1}
-        >
-          <Text style={styles.branchName}>
-            {currentBranch.name}
-            {branches.length > 1 ? ' ▾' : ''}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={signOut} activeOpacity={0.7}>
-          <Text style={styles.signOut}>Salir</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Content */}
+      <AppHeader title="Resumen de hoy" />
       <FlatList
         data={transfers}
         keyExtractor={(item) => item.id}
@@ -99,11 +80,6 @@ export default function HomeScreen() {
           ) : null
         }
       />
-
-      <BranchPicker
-        visible={pickerVisible}
-        onClose={() => setPickerVisible(false)}
-      />
     </SafeAreaView>
   );
 }
@@ -117,23 +93,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  branchName: {
-    fontFamily: fonts.bold,
-    fontSize: 18,
-    color: colors.primary,
-  },
-  signOut: {
-    fontFamily: fonts.medium,
-    fontSize: 14,
-    color: colors.secondary,
   },
   listContent: {
     paddingHorizontal: 20,
