@@ -39,7 +39,7 @@ export default function TransferCard({ transfer }: TransferCardProps) {
       </View>
       {transfer.transaction_id ? (
         <Text style={styles.txnId} numberOfLines={1}>
-          ID: {transfer.transaction_id}
+          {transfer.transaction_id}
         </Text>
       ) : null}
     </View>

@@ -1,6 +1,7 @@
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radii, shadows } from '@/lib/theme';
 
 export default function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
@@ -52,7 +53,7 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
         onPress={() => router.push('/(app)/transfer/capture')}
         activeOpacity={0.8}
       >
-        <Text style={styles.fabIcon}>+</Text>
+        <Ionicons name="scan-outline" size={28} color={colors.surface} />
       </TouchableOpacity>
     </View>
   );
@@ -65,8 +66,8 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
-    paddingBottom: 20,
-    paddingTop: 12,
+    paddingBottom: 12,
+    paddingTop: 8,
     paddingHorizontal: 24,
     alignItems: 'center',
     ...shadows.medium,
@@ -99,24 +100,18 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   fabSpacer: {
-    width: 72,
+    width: 80,
   },
   fab: {
     position: 'absolute',
-    top: -48,
+    top: -52,
     alignSelf: 'center',
-    width: 56,
-    height: 56,
-    borderRadius: radii.fab,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     ...shadows.medium,
-  },
-  fabIcon: {
-    fontSize: 28,
-    color: colors.surface,
-    fontFamily: fonts.bold,
-    marginTop: -2,
   },
 });

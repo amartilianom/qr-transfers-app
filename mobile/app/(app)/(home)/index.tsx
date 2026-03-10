@@ -59,7 +59,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <AppHeader title="Resumen de hoy" />
+      <AppHeader title="Tu Resumen" />
       <FlatList
         data={transfers}
         keyExtractor={(item) => item.id}
@@ -72,6 +72,7 @@ export default function HomeScreen() {
         ListHeaderComponent={
           <View style={styles.heroContainer}>
             <HeroCard total={todayTotal} />
+            <Text style={styles.sectionHeader}>Transacciones de hoy:</Text>
           </View>
         }
         ListEmptyComponent={
@@ -99,7 +100,14 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   heroContainer: {
-    marginBottom: 20,
+    marginBottom: 4,
+  },
+  sectionHeader: {
+    fontFamily: fonts.semiBold,
+    fontSize: 16,
+    color: colors.primary,
+    marginTop: 20,
+    marginBottom: 12,
   },
   emptyText: {
     fontFamily: fonts.regular,
