@@ -78,11 +78,7 @@ export async function getBranches() {
 }
 
 export async function createBranch(businessId: string, name: string) {
-  return supabase
-    .from('branch')
-    .insert({ business_id: businessId, name })
-    .select()
-    .single<Branch>();
+  return supabase.rpc('create_branch', { p_business_id: businessId, p_name: name });
 }
 
 export async function updateBranch(branchId: string, updates: { name?: string; active?: boolean }) {

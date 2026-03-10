@@ -19,10 +19,10 @@ begin
   return query
     select bu.id, bu.business_id, bu.role
     from public.business_user bu
-    where bu.user_id = auth.uid() and bu.active = true
-    limit 1;
+    where bu.user_id = auth.uid() and bu.active = true;
 end;
-$$ language plpgsql security definer stable;
+$$ language plpgsql security definer stable
+set search_path = public, auth;
 
 -- ============================================================
 -- Helper: get accessible branch IDs for current user
@@ -90,15 +90,13 @@ create policy "Users see accessible branches"
 create policy "Admins insert branches"
   on public.branch for insert
   with check (business_id in (
-    select business_id from public.business_user
-    where user_id = auth.uid() and role = 'admin' and active = true
+    select business_id from public.my_business_user() where role = 'admin'
   ));
 
 create policy "Admins update branches"
   on public.branch for update
   using (business_id in (
-    select business_id from public.business_user
-    where user_id = auth.uid() and role = 'admin' and active = true
+    select business_id from public.my_business_user() where role = 'admin'
   ));
 
 -- ============================================================
@@ -175,17 +173,26 @@ create policy "Users update own transfers"
 create policy "Admins manage invites"
   on public.invite for insert
   with check (business_id in (
-    select business_id from public.business_user
-    where user_id = auth.uid() and role = 'admin' and active = true
+    select business_id from public.my_business_user() where role = 'admin'
   ));
 
 create policy "Admins view invites"
   on public.invite for select
   using (business_id in (
-    select business_id from public.business_user
-    where user_id = auth.uid() and role = 'admin' and active = true
+    select business_id from public.my_business_user() where role = 'admin'
   ));
 
 create policy "Anyone can read invite by token"
   on public.invite for select
   using (auth.uid() is not null);
+
+-- ============================================================
+-- Grant table privileges to authenticated role
+-- (security definer RPCs bypass these, but direct client calls need them)
+-- ============================================================
+grant select, insert, update, delete on public.branch to authenticated;
+grant select, insert, update, delete on public.business_user to authenticated;
+grant select, insert, update, delete on public.business_user_branch to authenticated;
+grant select, insert, update, delete on public.invite to authenticated;
+grant select, insert, update, delete on public.transfer to authenticated;
+grant select, insert, update on public.business to authenticated;
