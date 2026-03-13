@@ -7,7 +7,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useBranch } from '@/lib/branch-context';
 import { getTodayTransfers } from '@/lib/queries';
 import { Transfer } from '@/types/database';
@@ -19,6 +19,7 @@ import { colors, fonts } from '@/lib/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const { selectedBranchIds, needsPicker } = useBranch();
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +64,12 @@ export default function HomeScreen() {
       <FlatList
         data={transfers}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <TransferCard transfer={item} />}
+        renderItem={({ item }) => (
+            <TransferCard
+              transfer={item}
+              onPress={() => router.push({ pathname: '/(app)/transfer/confirm', params: { transferId: item.id } })}
+            />
+          )}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         contentContainerStyle={styles.listContent}
         refreshControl={

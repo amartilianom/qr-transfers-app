@@ -55,6 +55,18 @@ export async function createTransfer(data: {
   return supabase.from('transfer').insert(data).select().single<Transfer>();
 }
 
+export async function getTransfer(id: string) {
+  return supabase
+    .from('transfer')
+    .select('*, branch:branch_id(name)')
+    .eq('id', id)
+    .single();
+}
+
+export async function getReceiptSignedUrl(path: string) {
+  return supabase.storage.from('receipts').createSignedUrl(path, 60 * 60);
+}
+
 export async function checkDuplicateTransactionId(txnId: string, branchId: string) {
   return supabase
     .from('transfer')

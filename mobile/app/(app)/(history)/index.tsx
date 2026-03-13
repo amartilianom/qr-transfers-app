@@ -7,7 +7,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useBranch } from '@/lib/branch-context';
 import { getTransfersByDateRange } from '@/lib/queries';
 import { Transfer } from '@/types/database';
@@ -47,6 +47,7 @@ function groupByDate(transfers: Transfer[]): Section[] {
 }
 
 export default function HistoryScreen() {
+  const router = useRouter();
   const { selectedBranchIds } = useBranch();
   const [period, setPeriod] = useState<Period>('day');
   const [offset, setOffset] = useState(0);
@@ -147,7 +148,10 @@ export default function HistoryScreen() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.cardWrapper}>
-            <TransferCard transfer={item} />
+            <TransferCard
+              transfer={item}
+              onPress={() => router.push({ pathname: '/(app)/transfer/confirm', params: { transferId: item.id } })}
+            />
           </View>
         )}
         renderSectionHeader={({ section }) => (

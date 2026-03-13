@@ -1,9 +1,10 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Transfer } from '@/types/database';
 import { colors, fonts, radii, shadows, sf, formatCOP } from '@/lib/theme';
 
 interface TransferCardProps {
   transfer: Transfer;
+  onPress?: () => void;
 }
 
 const providerLabels: Record<string, string> = {
@@ -13,14 +14,14 @@ const providerLabels: Record<string, string> = {
 };
 
 
-export default function TransferCard({ transfer }: TransferCardProps) {
+export default function TransferCard({ transfer, onPress }: TransferCardProps) {
   const time = new Date(transfer.occurred_at).toLocaleTimeString('es-CO', {
     hour: '2-digit',
     minute: '2-digit',
   });
 
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={onPress ? 0.7 : 1} disabled={!onPress}>
       <View style={styles.row}>
         <View style={styles.left}>
           <Text style={styles.provider}>{providerLabels[transfer.provider] ?? transfer.provider}</Text>
@@ -33,7 +34,7 @@ export default function TransferCard({ transfer }: TransferCardProps) {
           <Text style={styles.time}>{time}</Text>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
