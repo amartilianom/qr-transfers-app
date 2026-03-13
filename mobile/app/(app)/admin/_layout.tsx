@@ -12,9 +12,10 @@ export default function AdminLayout() {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'Admin' }} />
-      <Stack.Screen name="branches" options={{ title: 'Sucursales' }} />
-      <Stack.Screen name="invite" options={{ title: 'Invitar usuario' }} />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="profile" options={{ headerShown: false }} />
+      <Stack.Screen name="branches" options={{ headerShown: false }} />
+      <Stack.Screen name="invite" options={{ headerShown: false }} />
     </Stack>
   );
 }

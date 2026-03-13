@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,25 +9,22 @@ import {
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useBranch } from '@/lib/branch-context';
-import { getTransferHistory } from '@/lib/queries';
+import { getTransfersByDateRange } from '@/lib/queries';
 import { Transfer } from '@/types/database';
 import TransferCard from '@/components/TransferCard';
 import AppHeader from '@/components/AppHeader';
+import HistoryDashboard from '@/components/HistoryDashboard';
 import { colors, fonts, formatCOP } from '@/lib/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Period, getPeriodInfo, buildChartBars } from '@/lib/history-utils';
 
-type Section = {
-  title: string;
-  total: number;
-  data: Transfer[];
-};
+type Section = { title: string; total: number; data: Transfer[] };
 
 function groupByDate(transfers: Transfer[]): Section[] {
   const map = new Map<string, Transfer[]>();
 
   for (const t of transfers) {
-    const date = new Date(t.occurred_at);
-    const key = date.toLocaleDateString('es-CO', {
+    const key = new Date(t.occurred_at).toLocaleDateString('es-CO', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -36,39 +33,39 @@ function groupByDate(transfers: Transfer[]): Section[] {
     map.get(key)!.push(t);
   }
 
-  const today = new Date().toLocaleDateString('es-CO', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
-  const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('es-CO', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
+  const fmt = (d: Date) =>
+    d.toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  const todayKey = fmt(new Date());
+  const yesterdayKey = fmt(new Date(Date.now() - 86_400_000));
 
   return Array.from(map.entries()).map(([key, data]) => {
     let title = key;
-    if (key === today) title = 'Hoy';
-    else if (key === yesterday) title = 'Ayer';
-
-    const total = data.reduce((sum, t) => sum + Number(t.amount), 0);
-    return { title, total, data };
+    if (key === todayKey) title = 'Hoy';
+    else if (key === yesterdayKey) title = 'Ayer';
+    return { title, total: data.reduce((s, t) => s + Number(t.amount), 0), data };
   });
 }
 
 export default function HistoryScreen() {
-  const { currentBranch } = useBranch();
-  const [sections, setSections] = useState<Section[]>([]);
+  const { selectedBranchIds } = useBranch();
+  const [period, setPeriod] = useState<Period>('day');
+  const [offset, setOffset] = useState(0);
+  const [allFetched, setAllFetched] = useState<Transfer[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  const periodInfo = useMemo(() => getPeriodInfo(period, offset), [period, offset]);
+
   const fetchData = useCallback(async () => {
-    if (!currentBranch) return;
-    const { data } = await getTransferHistory(currentBranch.id);
-    setSections(groupByDate(data ?? []));
+    if (selectedBranchIds.length === 0) return;
+    const { data } = await getTransfersByDateRange(
+      selectedBranchIds,
+      periodInfo.fetchStart,
+      periodInfo.fetchEnd,
+    );
+    setAllFetched(data ?? []);
     setLoading(false);
-  }, [currentBranch]);
+  }, [selectedBranchIds, periodInfo.fetchStart, periodInfo.fetchEnd]);
 
   useFocusEffect(
     useCallback(() => {
@@ -83,10 +80,58 @@ export default function HistoryScreen() {
     setRefreshing(false);
   }
 
+  function handlePeriodChange(p: Period) {
+    setPeriod(p);
+    setOffset(0);
+  }
+
+  // List and total use the narrower listStart/listEnd (relevant for 'day' mode)
+  const listTransfers = useMemo(() => {
+    const { listStart, listEnd } = periodInfo;
+    return allFetched.filter((t) => {
+      const d = new Date(t.occurred_at).getTime();
+      return d >= listStart.getTime() && d <= listEnd.getTime();
+    });
+  }, [allFetched, periodInfo]);
+
+  // In 'day' mode the chart only plots the selected day — other bars stay at zero.
+  // In all other modes the chart spans the full fetched period.
+  const chartBars = useMemo(
+    () => buildChartBars(
+      periodInfo.emptyBars,
+      period === 'day' ? listTransfers : allFetched,
+      periodInfo.getBucketIndex,
+    ),
+    [period, listTransfers, allFetched, periodInfo],
+  );
+
+  const total = useMemo(
+    () => listTransfers.reduce((s, t) => s + Number(t.amount), 0),
+    [listTransfers],
+  );
+
+  const sections = useMemo(() => groupByDate(listTransfers), [listTransfers]);
+
+  const dashboard = (
+    <HistoryDashboard
+      period={period}
+      offset={offset}
+      total={total}
+      periodLabel={periodInfo.periodLabel}
+      rangeLabel={periodInfo.rangeLabel}
+      chartBars={chartBars}
+      canGoForward={periodInfo.canGoForward}
+      onPeriodChange={handlePeriodChange}
+      onPrev={() => setOffset((o) => o - 1)}
+      onNext={() => setOffset((o) => Math.min(o + 1, 0))}
+    />
+  );
+
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <AppHeader title="Tu Historial" />
+        {dashboard}
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -108,15 +153,22 @@ export default function HistoryScreen() {
         renderSectionHeader={({ section }) => (
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{section.title}</Text>
+            <Text style={styles.sectionDot}>·</Text>
             <Text style={styles.sectionTotal}>{formatCOP(section.total)}</Text>
           </View>
         )}
+        ListHeaderComponent={
+          <View>
+            {dashboard}
+            <View style={styles.divider} />
+          </View>
+        }
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No hay transferencias en este período</Text>
+        }
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-        }
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No hay transferencias registradas</Text>
         }
         stickySectionHeadersEnabled={false}
       />
@@ -138,24 +190,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 100,
   },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginHorizontal: 20,
+    marginBottom: 8,
+  },
   sectionHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    marginTop: 4,
+    gap: 6,
+    paddingTop: 16,
+    paddingBottom: 6,
   },
   sectionTitle: {
-    fontFamily: fonts.semiBold,
-    fontSize: 14,
+    fontFamily: fonts.medium,
+    fontSize: 12,
     color: colors.secondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  },
+  sectionDot: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.secondary,
   },
   sectionTotal: {
-    fontFamily: fonts.bold,
-    fontSize: 14,
-    color: colors.primary,
+    fontFamily: fonts.semiBold,
+    fontSize: 12,
+    color: colors.secondary,
   },
   cardWrapper: {
     marginBottom: 10,

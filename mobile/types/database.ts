@@ -17,6 +17,7 @@ export interface Branch {
   id: string;
   business_id: string;
   name: string;
+  address: string | null;
   active: boolean;
   created_at: string;
   updated_at: string;
@@ -28,7 +29,10 @@ export interface BusinessUser {
   user_id: string;
   role: UserRole;
   last_branch_id: string | null;
+  name: string | null;
+  whatsapp: string | null;
   active: boolean;
+  last_selected?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -40,6 +44,8 @@ export interface BusinessUserBranch {
   created_at: string;
 }
 
+export type InviteStatus = 'pending' | 'accepted' | 'rejected';
+
 export interface Invite {
   id: string;
   business_id: string;
@@ -47,6 +53,9 @@ export interface Invite {
   role: UserRole;
   branch_ids: string[];
   token: string;
+  name: string;
+  phone: string;
+  status: InviteStatus;
   claimed_by: string | null;
   expires_at: string;
   created_at: string;

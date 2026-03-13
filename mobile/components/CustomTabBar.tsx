@@ -2,7 +2,14 @@ import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fonts, radii, shadows } from '@/lib/theme';
+import { colors, fonts, shadows } from '@/lib/theme';
+
+type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
+
+const TAB_ICONS: Record<string, { default: IoniconsName; active: IoniconsName }> = {
+  Inicio:    { default: 'home-outline',  active: 'home' },
+  Historial: { default: 'time-outline',  active: 'time' },
+};
 
 export default function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const router = useRouter();
@@ -20,6 +27,8 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
     const { options } = descriptors[route.key];
     const label = (options.tabBarLabel ?? options.title ?? route.name) as string;
     const isFocused = state.index === state.routes.indexOf(route);
+    const icons = TAB_ICONS[label];
+    const iconName = icons ? (isFocused ? icons.active : icons.default) : 'ellipse-outline';
 
     function onPress() {
       const event = navigation.emit({
@@ -34,6 +43,11 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
 
     return (
       <TouchableOpacity key={route.key} style={styles.tab} onPress={onPress} activeOpacity={0.7}>
+        <Ionicons
+          name={iconName}
+          size={22}
+          color={isFocused ? colors.primary : colors.secondary}
+        />
         <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>{label}</Text>
       </TouchableOpacity>
     );
@@ -66,8 +80,8 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
-    paddingBottom: 12,
-    paddingTop: 8,
+    paddingBottom: 20,
+    paddingTop: 12,
     paddingHorizontal: 24,
     alignItems: 'center',
     ...shadows.medium,
@@ -88,11 +102,12 @@ const styles = StyleSheet.create({
   tab: {
     alignItems: 'center',
     paddingVertical: 4,
-    paddingHorizontal: 16,
+    paddingHorizontal: 28,
+    gap: 3,
   },
   tabLabel: {
     fontFamily: fonts.medium,
-    fontSize: 13,
+    fontSize: 12,
     color: colors.secondary,
   },
   tabLabelActive: {
@@ -104,11 +119,11 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    top: -52,
+    top: -28,
     alignSelf: 'center',
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: 20,
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',

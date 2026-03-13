@@ -13,11 +13,6 @@ const providerLabels: Record<string, string> = {
   bancolombia: 'Bancolombia',
 };
 
-const providerColors: Record<string, string> = {
-  nequi: '#E91E63',
-  daviplata: '#FF5722',
-  bancolombia: '#FFC107',
-};
 
 export default function TransferCard({ transfer }: TransferCardProps) {
   const time = new Date(transfer.occurred_at).toLocaleTimeString('es-CO', {
@@ -29,19 +24,16 @@ export default function TransferCard({ transfer }: TransferCardProps) {
     <View style={styles.card}>
       <View style={styles.row}>
         <View style={styles.left}>
-          <View style={[styles.providerDot, { backgroundColor: providerColors[transfer.provider] ?? colors.secondary }]} />
-          <View>
-            <Text style={styles.provider}>{providerLabels[transfer.provider] ?? transfer.provider}</Text>
-            <Text style={styles.time}>{time}</Text>
-          </View>
+          <Text style={styles.provider}>{providerLabels[transfer.provider] ?? transfer.provider}</Text>
+          {transfer.transaction_id ? (
+            <Text style={styles.txnId} numberOfLines={1}>{transfer.transaction_id}</Text>
+          ) : null}
         </View>
-        <Text style={styles.amount}>{formatCOP(transfer.amount)}</Text>
+        <View style={styles.right}>
+          <Text style={styles.amount}>{formatCOP(transfer.amount)}</Text>
+          <Text style={styles.time}>{time}</Text>
+        </View>
       </View>
-      {transfer.transaction_id ? (
-        <Text style={styles.txnId} numberOfLines={1}>
-          {transfer.transaction_id}
-        </Text>
-      ) : null}
     </View>
   );
 }
@@ -56,38 +48,35 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   left: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    flex: 1,
+    flexDirection: 'column',
   },
-  providerDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  right: {
+    alignItems: 'flex-end',
   },
   provider: {
     fontFamily: fonts.semiBold,
     fontSize: 15,
     color: colors.primary,
   },
-  time: {
+  txnId: {
     fontFamily: fonts.regular,
-    fontSize: 13,
+    fontSize: 12,
     color: colors.secondary,
     marginTop: 2,
   },
   amount: {
     fontFamily: fonts.bold,
-    fontSize: 17,
+    fontSize: 15,
     color: colors.primary,
   },
-  txnId: {
+  time: {
     fontFamily: fonts.regular,
     fontSize: 12,
     color: colors.secondary,
-    marginTop: 8,
+    marginTop: 2,
   },
 });

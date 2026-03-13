@@ -19,7 +19,7 @@ import { colors, fonts } from '@/lib/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
-  const { currentBranch, needsPicker } = useBranch();
+  const { selectedBranchIds, needsPicker } = useBranch();
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -27,11 +27,11 @@ export default function HomeScreen() {
   const todayTotal = transfers.reduce((sum, t) => sum + Number(t.amount), 0);
 
   const fetchData = useCallback(async () => {
-    if (!currentBranch) return;
-    const { data } = await getTodayTransfers(currentBranch.id);
+    if (selectedBranchIds.length === 0) return;
+    const { data } = await getTodayTransfers(selectedBranchIds);
     setTransfers(data ?? []);
     setLoading(false);
-  }, [currentBranch]);
+  }, [selectedBranchIds]);
 
   useFocusEffect(
     useCallback(() => {
@@ -46,7 +46,7 @@ export default function HomeScreen() {
     setRefreshing(false);
   }
 
-  if (!currentBranch) {
+  if (selectedBranchIds.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <BranchPicker visible={needsPicker} />

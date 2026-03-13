@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useBranch } from '@/lib/branch-context';
 import { useAuth } from '@/lib/auth-context';
 import BranchPicker from '@/components/BranchPicker';
@@ -12,13 +13,13 @@ interface AppHeaderProps {
 
 export default function AppHeader({ title }: AppHeaderProps) {
   const router = useRouter();
-  const { currentBranch, branches } = useBranch();
-  const { businessUser, signOut } = useAuth();
+  const { currentBranch, isAllBranches, branches } = useBranch();
+  const { businessUser, displayName, signOut } = useAuth();
   const [pickerVisible, setPickerVisible] = useState(false);
 
   const isAdmin = businessUser?.role === 'admin';
-  const roleLabel = isAdmin ? 'Admin' : 'Colaborador';
-  const canSwitchBranch = branches.length > 1;
+  const canSwitchBranch = branches.length >= 1;
+  const branchLabel = isAllBranches ? 'Todas' : (currentBranch?.name ?? '—');
 
   function onGearPress() {
     router.push('/(app)/admin');
@@ -28,9 +29,9 @@ export default function AppHeader({ title }: AppHeaderProps) {
     <View style={styles.container}>
       {/* Row 1: greeting + gear */}
       <View style={styles.row}>
-        <Text style={styles.greeting}>Hola, {roleLabel}</Text>
+        <Text style={styles.greeting}>Hola, {displayName}</Text>
         <TouchableOpacity onPress={onGearPress} activeOpacity={0.7} style={styles.gearButton}>
-          <Text style={styles.gearIcon}>⚙</Text>
+          <Ionicons name="settings-outline" size={22} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -45,7 +46,7 @@ export default function AppHeader({ title }: AppHeaderProps) {
           onPress={() => canSwitchBranch && setPickerVisible(true)}
           activeOpacity={canSwitchBranch ? 0.7 : 1}
         >
-          <Text style={styles.branchName}>{currentBranch?.name ?? '—'}</Text>
+          <Text style={styles.branchName}>{branchLabel}</Text>
           {canSwitchBranch && <Text style={styles.chevron}>▾</Text>}
         </TouchableOpacity>
       </View>
@@ -75,10 +76,6 @@ const styles = StyleSheet.create({
   gearButton: {
     padding: 10,
     margin: -10,
-  },
-  gearIcon: {
-    fontSize: 20,
-    color: colors.primary,
   },
   title: {
     fontFamily: fonts.extraBold,

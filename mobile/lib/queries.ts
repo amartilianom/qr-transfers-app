@@ -15,14 +15,28 @@ export async function getTransferHistory(branchId: string) {
     .returns<Transfer[]>();
 }
 
-export async function getTodayTransfers(branchId: string) {
+export async function getTransfersByDateRange(branchIds: string | string[], start: Date, end: Date) {
+  const ids = Array.isArray(branchIds) ? branchIds : [branchIds];
+  return supabase
+    .from('transfer')
+    .select('*')
+    .in('branch_id', ids)
+    .eq('active', true)
+    .gte('occurred_at', start.toISOString())
+    .lte('occurred_at', end.toISOString())
+    .order('occurred_at', { ascending: false })
+    .returns<Transfer[]>();
+}
+
+export async function getTodayTransfers(branchIds: string | string[]) {
+  const ids = Array.isArray(branchIds) ? branchIds : [branchIds];
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
   return supabase
     .from('transfer')
     .select('*')
-    .eq('branch_id', branchId)
+    .in('branch_id', ids)
     .gte('occurred_at', startOfDay.toISOString())
     .eq('active', true)
     .order('occurred_at', { ascending: false })
@@ -77,11 +91,11 @@ export async function getBranches() {
     .returns<Branch[]>();
 }
 
-export async function createBranch(businessId: string, name: string) {
-  return supabase.rpc('create_branch', { p_business_id: businessId, p_name: name });
+export async function createBranch(businessId: string, name: string, address?: string) {
+  return supabase.rpc('create_branch', { p_business_id: businessId, p_name: name, p_address: address ?? null });
 }
 
-export async function updateBranch(branchId: string, updates: { name?: string; active?: boolean }) {
+export async function updateBranch(branchId: string, updates: { name?: string; address?: string | null; active?: boolean }) {
   return supabase.from('branch').update(updates).eq('id', branchId);
 }
 
@@ -115,6 +129,8 @@ export async function createInvite(
   createdBy: string,
   role: UserRole,
   branchIds: string[],
+  name?: string,
+  phone?: string,
 ) {
   return supabase
     .from('invite')
@@ -123,7 +139,50 @@ export async function createInvite(
       created_by: createdBy,
       role,
       branch_ids: branchIds,
+      name: name ?? '',
+      phone: phone ?? '',
     })
     .select()
     .single<Invite>();
+}
+
+// ============================================================
+// Team
+// ============================================================
+
+export async function getTeamCollaborators(businessId: string) {
+  return supabase
+    .from('business_user')
+    .select('*')
+    .eq('business_id', businessId)
+    .eq('role', 'collaborator')
+    .eq('active', true)
+    .order('created_at', { ascending: true })
+    .returns<BusinessUser[]>();
+}
+
+export async function getPendingInvites(businessId: string) {
+  return supabase
+    .from('invite')
+    .select('*')
+    .eq('business_id', businessId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true })
+    .returns<Invite[]>();
+}
+
+export async function updateTeamMember(buId: string, updates: { name?: string; whatsapp?: string }) {
+  return supabase.from('business_user').update(updates).eq('id', buId);
+}
+
+export async function removeTeamMember(buId: string) {
+  return supabase.from('business_user').update({ active: false }).eq('id', buId);
+}
+
+export async function updateInviteMember(inviteId: string, updates: { name?: string; phone?: string }) {
+  return supabase.from('invite').update(updates).eq('id', inviteId);
+}
+
+export async function cancelInvite(inviteId: string) {
+  return supabase.from('invite').update({ status: 'rejected' }).eq('id', inviteId);
 }

@@ -8,6 +8,7 @@ interface AuthContextValue {
   businessUser: BusinessUser | null; // Deprecated: use currentBusinessUser
   currentBusinessUser: BusinessUser | null;
   allBusinessUsers: BusinessUser[];
+  displayName: string;
   isLoading: boolean;
   signInWithOtp: (phone: string) => Promise<{ error: Error | null }>;
   verifyOtp: (phone: string, token: string) => Promise<{ error: Error | null }>;
@@ -116,6 +117,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setCurrentBusinessUser(null);
   }, []);
 
+  const displayName = session?.user.user_metadata?.full_name || 'bienvenido';
+
   return (
     <AuthContext.Provider
       value={{
@@ -123,6 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         businessUser: currentBusinessUser, // Backward compat
         currentBusinessUser,
         allBusinessUsers,
+        displayName,
         isLoading,
         signInWithOtp,
         verifyOtp,

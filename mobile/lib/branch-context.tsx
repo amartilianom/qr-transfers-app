@@ -1,12 +1,15 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
 import { Branch } from '@/types/database';
 
 interface BranchContextValue {
   branches: Branch[];
-  currentBranch: Branch | null;
+  currentBranch: Branch | null;       // null when "Todas" is selected
+  isAllBranches: boolean;
+  selectedBranchIds: string[];        // all IDs when "Todas", else [currentBranch.id]
   selectBranch: (branchId: string) => Promise<void>;
+  selectAllBranches: () => void;
   isLoading: boolean;
   needsPicker: boolean;
 }
@@ -17,6 +20,7 @@ export function BranchProvider({ children }: { children: React.ReactNode }) {
   const { businessUser } = useAuth();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [currentBranch, setCurrentBranch] = useState<Branch | null>(null);
+  const [isAllBranches, setIsAllBranches] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [needsPicker, setNeedsPicker] = useState(false);
 
@@ -35,20 +39,26 @@ export function BranchProvider({ children }: { children: React.ReactNode }) {
     setBranches(branchList);
 
     if (branchList.length === 1) {
-      // Auto-select the only branch
       setCurrentBranch(branchList[0]);
+      setIsAllBranches(false);
       setNeedsPicker(false);
-    } else if (businessUser.last_branch_id) {
-      // Try to restore last selected branch
-      const last = branchList.find((b) => b.id === businessUser.last_branch_id);
-      if (last) {
-        setCurrentBranch(last);
-        setNeedsPicker(false);
-      } else {
-        setNeedsPicker(true);
-      }
     } else if (branchList.length > 1) {
-      setNeedsPicker(true);
+      if (businessUser.last_branch_id) {
+        const last = branchList.find((b) => b.id === businessUser.last_branch_id);
+        if (last) {
+          setCurrentBranch(last);
+          setIsAllBranches(false);
+        } else {
+          // Default to "Todas" when last branch not found
+          setCurrentBranch(null);
+          setIsAllBranches(true);
+        }
+      } else {
+        // Default to "Todas" when no last selection
+        setCurrentBranch(null);
+        setIsAllBranches(true);
+      }
+      setNeedsPicker(false);
     }
 
     setIsLoading(false);
@@ -64,9 +74,9 @@ export function BranchProvider({ children }: { children: React.ReactNode }) {
       if (!branch || !businessUser) return;
 
       setCurrentBranch(branch);
+      setIsAllBranches(false);
       setNeedsPicker(false);
 
-      // Persist selection
       await supabase
         .from('business_user')
         .update({ last_branch_id: branchId })
@@ -75,8 +85,21 @@ export function BranchProvider({ children }: { children: React.ReactNode }) {
     [branches, businessUser],
   );
 
+  const selectAllBranches = useCallback(() => {
+    setCurrentBranch(null);
+    setIsAllBranches(true);
+    setNeedsPicker(false);
+  }, []);
+
+  const selectedBranchIds = useMemo(
+    () => (isAllBranches ? branches.map((b) => b.id) : currentBranch ? [currentBranch.id] : []),
+    [isAllBranches, branches, currentBranch],
+  );
+
   return (
-    <BranchContext.Provider value={{ branches, currentBranch, selectBranch, isLoading, needsPicker }}>
+    <BranchContext.Provider
+      value={{ branches, currentBranch, isAllBranches, selectedBranchIds, selectBranch, selectAllBranches, isLoading, needsPicker }}
+    >
       {children}
     </BranchContext.Provider>
   );

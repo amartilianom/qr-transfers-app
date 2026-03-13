@@ -16,10 +16,15 @@ interface BranchPickerProps {
 }
 
 export default function BranchPicker({ visible, onClose }: BranchPickerProps) {
-  const { branches, selectBranch, currentBranch } = useBranch();
+  const { branches, selectBranch, selectAllBranches, currentBranch, isAllBranches } = useBranch();
 
   async function handleSelect(branch: Branch) {
     await selectBranch(branch.id);
+    onClose?.();
+  }
+
+  function handleSelectAll() {
+    selectAllBranches();
     onClose?.();
   }
 
@@ -29,6 +34,19 @@ export default function BranchPicker({ visible, onClose }: BranchPickerProps) {
         <View style={styles.sheet}>
           <Text style={styles.title}>Selecciona una sucursal</Text>
 
+          {/* "Todas" option */}
+          <TouchableOpacity
+            style={[styles.branchItem, isAllBranches && styles.branchItemActive]}
+            onPress={handleSelectAll}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.branchName, isAllBranches && styles.branchNameActive]}>
+              Todas
+            </Text>
+          </TouchableOpacity>
+
+          <View style={styles.separator} />
+
           <FlatList
             data={branches}
             keyExtractor={(item) => item.id}
@@ -36,7 +54,7 @@ export default function BranchPicker({ visible, onClose }: BranchPickerProps) {
               <TouchableOpacity
                 style={[
                   styles.branchItem,
-                  item.id === currentBranch?.id && styles.branchItemActive,
+                  !isAllBranches && item.id === currentBranch?.id && styles.branchItemActive,
                 ]}
                 onPress={() => handleSelect(item)}
                 activeOpacity={0.7}
@@ -44,7 +62,7 @@ export default function BranchPicker({ visible, onClose }: BranchPickerProps) {
                 <Text
                   style={[
                     styles.branchName,
-                    item.id === currentBranch?.id && styles.branchNameActive,
+                    !isAllBranches && item.id === currentBranch?.id && styles.branchNameActive,
                   ]}
                 >
                   {item.name}

@@ -31,11 +31,14 @@ export default function CashierInviteScreen() {
       return;
     }
 
+    // Normalize phone to E.164 (+prefix) to match how PhoneInput stores it
+    const phone = user.phone.startsWith('+') ? user.phone : `+${user.phone}`;
+
     // Check for pending invite
     const { data: invites, error: inviteError } = await supabase
       .from('invite')
       .select('id, business_id, branch_ids')
-      .eq('phone', user.phone)
+      .eq('phone', phone)
       .eq('status', 'pending')
       .gt('expires_at', new Date().toISOString())
       .limit(1);
