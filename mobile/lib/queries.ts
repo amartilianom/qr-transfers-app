@@ -204,7 +204,7 @@ export async function cancelInvite(inviteId: string) {
 // ============================================================
 
 export async function deleteTransfer(id: string) {
-  return supabase.from('transfer').update({ active: false }).eq('id', id);
+  return supabase.rpc('delete_transfer', { p_transfer_id: id });
 }
 
 export async function analyzeReceipt(imageBase64: string, mimeType = 'image/jpeg') {

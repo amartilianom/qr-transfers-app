@@ -72,6 +72,7 @@ export default function ConfirmScreen() {
   // ── Load existing transfer ──
   useEffect(() => {
     if (!isViewMode) return;
+    setReceiptUrl(null);
     (async () => {
       const { data } = await getTransfer(transferId!);
       if (!data) { setViewLoading(false); return; }
