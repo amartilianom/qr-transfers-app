@@ -1,3 +1,16 @@
+import { Dimensions } from 'react-native';
+
+// Scale fonts proportionally to screen width.
+// Base is 390pt (iPhone 14). Capped at ±20% to avoid extremes on tablets/SE.
+const BASE_WIDTH = 390;
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const _s = Math.min(Math.max(SCREEN_WIDTH / BASE_WIDTH, 0.85), 1.2);
+
+/** Scale a font size to the current device width. */
+export function sf(size: number): number {
+  return Math.round(size * _s);
+}
+
 export const colors = {
   background: '#F3FBF5',
   primary: '#0A0A0A',

@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/lib/auth-context';
-import { colors, fonts, radii, shadows } from '@/lib/theme';
+import { colors, fonts, radii, shadows, sf } from '@/lib/theme';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -94,12 +94,12 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontFamily: fonts.medium,
-    fontSize: 14,
+    fontSize: sf(16),
     color: colors.secondary,
   },
   title: {
     fontFamily: fonts.extraBold,
-    fontSize: 26,
+    fontSize: sf(28),
     color: colors.primary,
     paddingHorizontal: 20,
     marginBottom: 24,
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   rowLabel: {
     flex: 1,
     fontFamily: fonts.medium,
-    fontSize: 15,
+    fontSize: sf(17),
     color: colors.primary,
   },
   signOutCard: {
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   },
   signOutText: {
     fontFamily: fonts.medium,
-    fontSize: 15,
+    fontSize: sf(17),
     color: colors.error,
   },
 });

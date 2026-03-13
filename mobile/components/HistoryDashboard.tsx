@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fonts, formatCOP } from '@/lib/theme';
+import { colors, fonts, formatCOP, shadows, sf } from '@/lib/theme';
 import { Period, ChartBar, formatChartValue } from '@/lib/history-utils';
 
 const PERIOD_TABS: { key: Period; label: string }[] = [
@@ -59,13 +59,13 @@ export default function HistoryDashboard({
       </View>
 
       {/* Date navigator */}
-      <View style={styles.navigator}>
+      <View style={styles.navigatorCard}>
         <TouchableOpacity
           onPress={onPrev}
           hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
           activeOpacity={0.6}
         >
-          <Ionicons name="chevron-back" size={20} color={colors.primary} />
+          <Ionicons name="chevron-back" size={24} color={colors.primary} />
         </TouchableOpacity>
 
         <View style={styles.periodInfo}>
@@ -81,7 +81,7 @@ export default function HistoryDashboard({
         >
           <Ionicons
             name="chevron-forward"
-            size={20}
+            size={24}
             color={canGoForward ? colors.primary : colors.border}
           />
         </TouchableOpacity>
@@ -125,17 +125,18 @@ const styles = StyleSheet.create({
   // Tabs
   tabs: {
     flexDirection: 'row',
+    justifyContent: 'space-evenly',
     paddingHorizontal: 20,
     marginBottom: 16,
   },
   tab: {
-    marginRight: 24,
     paddingBottom: 4,
     alignItems: 'center',
+    flex: 1,
   },
   tabLabel: {
     fontFamily: fonts.medium,
-    fontSize: 14,
+    fontSize: sf(16),
     color: colors.secondary,
   },
   tabLabelActive: {
@@ -151,25 +152,30 @@ const styles = StyleSheet.create({
   },
 
   // Navigator
-  navigator: {
+  navigatorCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 16,
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    marginHorizontal: 20,
+    marginBottom: 16,
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    ...shadows.soft,
   },
   periodInfo: {
+    flex: 1,
     alignItems: 'center',
-    minWidth: 140,
   },
   periodLabel: {
     fontFamily: fonts.semiBold,
-    fontSize: 15,
+    fontSize: sf(17),
     color: colors.primary,
   },
   rangeLabel: {
     fontFamily: fonts.regular,
-    fontSize: 12,
+    fontSize: sf(15),
     color: colors.secondary,
     marginTop: 2,
   },
@@ -177,7 +183,7 @@ const styles = StyleSheet.create({
   // Total
   total: {
     fontFamily: fonts.extraBold,
-    fontSize: 32,
+    fontSize: sf(38),
     color: colors.primary,
     textAlign: 'center',
     marginBottom: 20,
@@ -211,7 +217,7 @@ const styles = StyleSheet.create({
   },
   barLabel: {
     fontFamily: fonts.regular,
-    fontSize: 11,
+    fontSize: sf(13),
     color: colors.secondary,
     marginTop: 6,
   },
@@ -227,7 +233,7 @@ const styles = StyleSheet.create({
   },
   yLabel: {
     fontFamily: fonts.regular,
-    fontSize: 10,
+    fontSize: sf(12),
     color: colors.secondary,
   },
 });

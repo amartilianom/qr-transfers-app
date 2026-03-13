@@ -1,7 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Transfer } from '@/types/database';
-import { colors, fonts, radii, shadows } from '@/lib/theme';
-import { formatCOP } from '@/lib/theme';
+import { colors, fonts, radii, shadows, sf, formatCOP } from '@/lib/theme';
 
 interface TransferCardProps {
   transfer: Transfer;
@@ -59,23 +58,23 @@ const styles = StyleSheet.create({
   },
   provider: {
     fontFamily: fonts.semiBold,
-    fontSize: 15,
+    fontSize: sf(17),
     color: colors.primary,
   },
   txnId: {
     fontFamily: fonts.regular,
-    fontSize: 12,
+    fontSize: sf(14),
     color: colors.secondary,
     marginTop: 2,
   },
   amount: {
     fontFamily: fonts.bold,
-    fontSize: 15,
+    fontSize: sf(17),
     color: colors.primary,
   },
   time: {
     fontFamily: fonts.regular,
-    fontSize: 12,
+    fontSize: sf(14),
     color: colors.secondary,
     marginTop: 2,
   },

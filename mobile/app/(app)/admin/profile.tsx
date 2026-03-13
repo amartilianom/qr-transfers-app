@@ -16,7 +16,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
-import { colors, fonts, radii, shadows } from '@/lib/theme';
+import { colors, fonts, radii, shadows, sf } from '@/lib/theme';
 import PhoneInput from '@/components/PhoneInput';
 
 export default function ProfileScreen() {
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontFamily: fonts.medium,
-    fontSize: 14,
+    fontSize: sf(16),
     color: colors.secondary,
   },
   titleRow: {
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fonts.extraBold,
-    fontSize: 26,
+    fontSize: sf(28),
     color: colors.primary,
   },
   content: {
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontFamily: fonts.semiBold,
-    fontSize: 11,
+    fontSize: sf(13),
     color: colors.secondary,
     letterSpacing: 0.8,
   },
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
   },
   input: {
     fontFamily: fonts.medium,
-    fontSize: 15,
+    fontSize: sf(17),
     color: colors.primary,
     paddingVertical: 14,
   },
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontFamily: fonts.bold,
-    fontSize: 15,
+    fontSize: sf(17),
     color: colors.surface,
   },
 });

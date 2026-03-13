@@ -2,30 +2,29 @@ import { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
-import { colors, fonts, radii } from '@/lib/theme';
+import { colors, fonts, radii, sf } from '@/lib/theme';
+import PhoneInput from '@/components/PhoneInput';
 
 export default function SignInScreen() {
-  const [phone, setPhone] = useState('');
+  const [fullPhone, setFullPhone] = useState('+57');
   const [loading, setLoading] = useState(false);
   const { signInWithOtp } = useAuth();
   const router = useRouter();
   const { role } = useLocalSearchParams<{ role?: 'admin' | 'cashier' }>();
 
-  const fullPhone = `+57${phone.replace(/\D/g, '')}`;
-
   async function handleSendOtp() {
-    const digits = phone.replace(/\D/g, '');
-    if (digits.length < 10) {
-      Alert.alert('Error', 'Ingresa un número de 10 dígitos');
+    // Strip dial code and count remaining digits
+    if (fullPhone.replace(/\D/g, '').length < 7) {
+      Alert.alert('Error', 'Ingresa un número válido');
       return;
     }
 
@@ -40,10 +39,7 @@ export default function SignInScreen() {
 
     router.push({
       pathname: '/(auth)/verify',
-      params: {
-        phone: fullPhone,
-        role: role || 'existing',
-      },
+      params: { phone: fullPhone, role: role || 'existing' },
     });
   }
 
@@ -56,20 +52,8 @@ export default function SignInScreen() {
         <Text style={styles.title}>Bienvenido</Text>
         <Text style={styles.subtitle}>Ingresa tu número de celular para continuar</Text>
 
-        <View style={styles.phoneRow}>
-          <View style={styles.prefix}>
-            <Text style={styles.prefixText}>+57</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            placeholder="300 123 4567"
-            placeholderTextColor={colors.secondary}
-            keyboardType="phone-pad"
-            maxLength={13}
-            value={phone}
-            onChangeText={setPhone}
-            autoFocus
-          />
+        <View style={styles.phoneWrapper}>
+          <PhoneInput value={fullPhone} onChange={setFullPhone} />
         </View>
 
         <TouchableOpacity
@@ -78,9 +62,10 @@ export default function SignInScreen() {
           disabled={loading}
           activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>
-            {loading ? 'Enviando...' : 'Enviar código'}
-          </Text>
+          {loading
+            ? <ActivityIndicator color={colors.surface} />
+            : <Text style={styles.buttonText}>Enviar código</Text>
+          }
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -99,45 +84,18 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fonts.bold,
-    fontSize: 32,
+    fontSize: sf(32),
     color: colors.primary,
     marginBottom: 8,
   },
   subtitle: {
     fontFamily: fonts.regular,
-    fontSize: 16,
+    fontSize: sf(16),
     color: colors.secondary,
     marginBottom: 32,
   },
-  phoneRow: {
-    flexDirection: 'row',
+  phoneWrapper: {
     marginBottom: 24,
-    gap: 12,
-  },
-  prefix: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.input,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  prefixText: {
-    fontFamily: fonts.semiBold,
-    fontSize: 16,
-    color: colors.primary,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radii.input,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    fontFamily: fonts.regular,
-    color: colors.primary,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   button: {
     backgroundColor: colors.primary,
@@ -150,7 +108,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontFamily: fonts.semiBold,
-    fontSize: 16,
+    fontSize: sf(16),
     color: colors.surface,
   },
 });

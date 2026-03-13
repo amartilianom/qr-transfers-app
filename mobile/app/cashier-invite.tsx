@@ -5,112 +5,140 @@ import {
   ActivityIndicator,
   StyleSheet,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
-import { colors, fonts, radii } from '@/lib/theme';
+import { colors, fonts, radii, shadows } from '@/lib/theme';
+
+type InviteInfo = {
+  id: string;
+  business_id: string;
+  branch_ids: string[];
+  businessName: string;
+};
 
 export default function CashierInviteScreen() {
   const { refreshBusinessUser } = useAuth();
   const router = useRouter();
   const [checking, setChecking] = useState(true);
+  const [accepting, setAccepting] = useState(false);
+  const [invite, setInvite] = useState<InviteInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    checkInvite();
+    lookupInvite();
   }, []);
 
-  async function checkInvite() {
-    const { data: { user } } = await supabase.auth.getUser();
+  async function lookupInvite() {
+    const { data, error: rpcError } = await supabase.rpc('get_my_pending_invite');
 
-    if (!user?.phone) {
-      setError('No se pudo obtener tu número de teléfono');
+    if (rpcError || !data) {
+      setError('No tienes invitaciones pendientes.');
       setChecking(false);
       return;
     }
 
-    // Normalize phone to E.164 (+prefix) to match how PhoneInput stores it
-    const phone = user.phone.startsWith('+') ? user.phone : `+${user.phone}`;
+    setInvite({
+      id: data.id,
+      business_id: data.business_id,
+      branch_ids: data.branch_ids,
+      businessName: data.business_name || 'el negocio',
+    });
+    setChecking(false);
+  }
 
-    // Check for pending invite
-    const { data: invites, error: inviteError } = await supabase
-      .from('invite')
-      .select('id, business_id, branch_ids')
-      .eq('phone', phone)
-      .eq('status', 'pending')
-      .gt('expires_at', new Date().toISOString())
-      .limit(1);
+  async function handleAccept() {
+    if (!invite) return;
+    setAccepting(true);
 
-    if (inviteError) {
-      setError(inviteError.message);
-      setChecking(false);
-      return;
-    }
-
-    if (!invites || invites.length === 0) {
-      setError('No tienes invitaciones pendientes');
-      setChecking(false);
-      return;
-    }
-
-    // Accept the invite
     const { error: acceptError } = await supabase.rpc('accept_invite', {
-      p_invite_id: invites[0].id,
+      p_invite_id: invite.id,
     });
 
     if (acceptError) {
       setError(acceptError.message);
-      setChecking(false);
+      setAccepting(false);
       return;
     }
 
-    // Refresh business user and navigate to app
     await refreshBusinessUser();
     router.replace('/(app)/(home)');
   }
 
-  function handleGoBack() {
-    router.back();
-  }
-
+  // ── Loading ──
   if (checking) {
     return (
-      <View style={styles.container}>
-        <View style={styles.content}>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Verificando invitación...</Text>
+          <Text style={styles.loadingText}>Buscando tu invitación...</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
-  if (error) {
+  // ── Error ──
+  if (error || !invite) {
     return (
-      <View style={styles.container}>
-        <View style={styles.content}>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centered}>
+          <View style={styles.iconCircle}>
+            <Ionicons name="mail-unread-outline" size={40} color={colors.secondary} />
+          </View>
           <Text style={styles.errorTitle}>No se encontró invitación</Text>
-          <Text style={styles.errorMessage}>
-            {error}
-          </Text>
+          <Text style={styles.errorMessage}>{error ?? 'No tienes invitaciones pendientes.'}</Text>
           <Text style={styles.errorHint}>
-            Debes ser invitado por un administrador para unirte como cajero.
+            Pídele al administrador que te invite con el número que usaste para registrarte.
           </Text>
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleGoBack}
-            activeOpacity={0.8}
-          >
+          <TouchableOpacity style={styles.button} onPress={() => router.back()} activeOpacity={0.8}>
             <Text style={styles.buttonText}>Volver</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
-  return null;
+  // ── Welcome / Accept ──
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.centered}>
+        <View style={styles.iconCircle}>
+          <Ionicons name="storefront-outline" size={40} color={colors.primary} />
+        </View>
+
+        <Text style={styles.welcomeTitle}>¡Bienvenido!</Text>
+        <Text style={styles.welcomeSub}>Has sido invitado a unirte a</Text>
+        <Text style={styles.businessName}>{invite.businessName}</Text>
+
+        <View style={styles.card}>
+          <Ionicons name="checkmark-circle-outline" size={20} color={colors.success} />
+          <Text style={styles.cardText}>
+            Al aceptar, podrás registrar transferencias en este negocio.
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.button, accepting && { opacity: 0.6 }]}
+          onPress={handleAccept}
+          disabled={accepting}
+          activeOpacity={0.8}
+        >
+          {accepting ? (
+            <ActivityIndicator color={colors.surface} />
+          ) : (
+            <Text style={styles.buttonText}>Aceptar invitación</Text>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} style={styles.cancelLink}>
+          <Text style={styles.cancelLinkText}>No por ahora</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -118,11 +146,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  content: {
+  centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: 32,
   },
   loadingText: {
     fontFamily: fonts.regular,
@@ -130,37 +158,103 @@ const styles = StyleSheet.create({
     color: colors.secondary,
     marginTop: 16,
   },
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    ...shadows.medium,
+  },
+
+  // Welcome
+  welcomeTitle: {
+    fontFamily: fonts.extraBold,
+    fontSize: 32,
+    color: colors.primary,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  welcomeSub: {
+    fontFamily: fonts.regular,
+    fontSize: 16,
+    color: colors.secondary,
+    textAlign: 'center',
+  },
+  businessName: {
+    fontFamily: fonts.bold,
+    fontSize: 22,
+    color: colors.primary,
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 32,
+  },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.surface,
+    borderRadius: radii.card,
+    padding: 16,
+    width: '100%',
+    marginBottom: 32,
+    ...shadows.soft,
+  },
+  cardText: {
+    flex: 1,
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    color: colors.secondary,
+    lineHeight: 20,
+  },
+
+  // Error
   errorTitle: {
     fontFamily: fonts.bold,
-    fontSize: 24,
+    fontSize: 22,
     color: colors.primary,
-    marginBottom: 16,
+    marginBottom: 12,
     textAlign: 'center',
   },
   errorMessage: {
     fontFamily: fonts.regular,
-    fontSize: 16,
+    fontSize: 15,
     color: colors.secondary,
-    marginBottom: 12,
+    marginBottom: 8,
     textAlign: 'center',
   },
   errorHint: {
     fontFamily: fonts.regular,
-    fontSize: 14,
+    fontSize: 13,
     color: colors.secondary,
     textAlign: 'center',
     marginBottom: 32,
+    lineHeight: 20,
   },
+
+  // Buttons
   button: {
     backgroundColor: colors.primary,
     borderRadius: radii.button,
     paddingVertical: 16,
     paddingHorizontal: 48,
     alignItems: 'center',
+    width: '100%',
   },
   buttonText: {
     fontFamily: fonts.semiBold,
     fontSize: 16,
     color: colors.surface,
+  },
+  cancelLink: {
+    marginTop: 16,
+    padding: 8,
+  },
+  cancelLinkText: {
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    color: colors.secondary,
   },
 });

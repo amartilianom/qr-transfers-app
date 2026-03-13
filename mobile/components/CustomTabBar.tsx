@@ -2,7 +2,7 @@ import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fonts, shadows } from '@/lib/theme';
+import { colors, fonts, shadows, sf } from '@/lib/theme';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontFamily: fonts.medium,
-    fontSize: 12,
+    fontSize: sf(14),
     color: colors.secondary,
   },
   tabLabelActive: {

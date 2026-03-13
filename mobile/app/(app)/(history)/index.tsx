@@ -14,7 +14,7 @@ import { Transfer } from '@/types/database';
 import TransferCard from '@/components/TransferCard';
 import AppHeader from '@/components/AppHeader';
 import HistoryDashboard from '@/components/HistoryDashboard';
-import { colors, fonts, formatCOP } from '@/lib/theme';
+import { colors, fonts, formatCOP, sf } from '@/lib/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Period, getPeriodInfo, buildChartBars } from '@/lib/history-utils';
 
@@ -205,17 +205,17 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: fonts.medium,
-    fontSize: 12,
+    fontSize: sf(14),
     color: colors.secondary,
   },
   sectionDot: {
     fontFamily: fonts.medium,
-    fontSize: 12,
+    fontSize: sf(14),
     color: colors.secondary,
   },
   sectionTotal: {
     fontFamily: fonts.semiBold,
-    fontSize: 12,
+    fontSize: sf(14),
     color: colors.secondary,
   },
   cardWrapper: {
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontFamily: fonts.regular,
-    fontSize: 15,
+    fontSize: sf(15),
     color: colors.secondary,
     textAlign: 'center',
     marginTop: 40,

@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useBranch } from '@/lib/branch-context';
 import { useAuth } from '@/lib/auth-context';
 import BranchPicker from '@/components/BranchPicker';
-import { colors, fonts, radii, shadows } from '@/lib/theme';
+import { colors, fonts, radii, shadows, sf } from '@/lib/theme';
 
 interface AppHeaderProps {
   title: string;
@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontFamily: fonts.medium,
-    fontSize: 14,
+    fontSize: sf(16),
     color: colors.secondary,
   },
   gearButton: {
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fonts.extraBold,
-    fontSize: 26,
+    fontSize: sf(28),
     color: colors.primary,
     marginBottom: 16,
   },
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   },
   branchLabel: {
     fontFamily: fonts.regular,
-    fontSize: 12,
+    fontSize: sf(14),
     color: colors.secondary,
   },
   branchSelector: {
@@ -103,11 +103,11 @@ const styles = StyleSheet.create({
   },
   branchName: {
     fontFamily: fonts.semiBold,
-    fontSize: 15,
+    fontSize: sf(17),
     color: colors.primary,
   },
   chevron: {
-    fontSize: 14,
+    fontSize: sf(14),
     color: colors.secondary,
   },
 });

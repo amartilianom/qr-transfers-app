@@ -28,7 +28,7 @@ import {
 } from '@/lib/queries';
 import { BusinessUser, Invite } from '@/types/database';
 import PhoneInput from '@/components/PhoneInput';
-import { colors, fonts, radii, shadows } from '@/lib/theme';
+import { colors, fonts, radii, shadows, sf } from '@/lib/theme';
 
 type MemberItem =
   | { kind: 'member'; data: BusinessUser }
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontFamily: fonts.medium,
-    fontSize: 14,
+    fontSize: sf(16),
     color: colors.secondary,
   },
   titleRow: {
@@ -344,16 +344,16 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fonts.extraBold,
-    fontSize: 26,
+    fontSize: sf(28),
     color: colors.primary,
   },
   hint: {
     fontFamily: fonts.regular,
-    fontSize: 12,
+    fontSize: sf(14),
     color: colors.secondary,
     paddingHorizontal: 20,
     marginBottom: 20,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   centered: {
     flex: 1,
@@ -380,12 +380,12 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontFamily: fonts.medium,
-    fontSize: 15,
+    fontSize: sf(17),
     color: colors.secondary,
   },
   emptyText: {
     fontFamily: fonts.regular,
-    fontSize: 14,
+    fontSize: sf(14),
     color: colors.secondary,
     textAlign: 'center',
     marginTop: 32,
@@ -408,12 +408,12 @@ const styles = StyleSheet.create({
   },
   memberName: {
     fontFamily: fonts.semiBold,
-    fontSize: 15,
+    fontSize: sf(17),
     color: colors.primary,
   },
   memberPhone: {
     fontFamily: fonts.regular,
-    fontSize: 13,
+    fontSize: sf(15),
     color: colors.secondary,
     marginTop: 2,
   },
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontFamily: fonts.bold,
-    fontSize: 11,
+    fontSize: sf(13),
     color: colors.success,
     letterSpacing: 0.5,
   },
@@ -457,12 +457,12 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontFamily: fonts.medium,
-    fontSize: 14,
+    fontSize: sf(16),
     color: colors.primary,
   },
   actionTextDanger: {
     fontFamily: fonts.medium,
-    fontSize: 14,
+    fontSize: sf(16),
     color: colors.error,
   },
 
@@ -487,12 +487,12 @@ const styles = StyleSheet.create({
   },
   editingName: {
     fontFamily: fonts.semiBold,
-    fontSize: 15,
+    fontSize: sf(17),
     color: colors.primary,
   },
   editingPhone: {
     fontFamily: fonts.regular,
-    fontSize: 13,
+    fontSize: sf(15),
     color: colors.secondary,
     marginTop: 2,
   },
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontFamily: fonts.semiBold,
-    fontSize: 11,
+    fontSize: sf(13),
     color: colors.secondary,
     letterSpacing: 0.8,
     marginTop: 14,
@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
   },
   fieldInput: {
     fontFamily: fonts.medium,
-    fontSize: 15,
+    fontSize: sf(17),
     color: colors.primary,
     paddingVertical: 10,
   },
@@ -540,7 +540,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontFamily: fonts.semiBold,
-    fontSize: 15,
+    fontSize: sf(17),
     color: colors.primary,
   },
   saveButton: {
@@ -552,7 +552,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontFamily: fonts.bold,
-    fontSize: 15,
+    fontSize: sf(17),
     color: colors.surface,
   },
 });

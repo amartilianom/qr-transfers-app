@@ -1,6 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, fonts, radii, shadows } from '@/lib/theme';
-import { formatCOP } from '@/lib/theme';
+import { colors, fonts, radii, shadows, sf, formatCOP } from '@/lib/theme';
 
 interface HeroCardProps {
   total: number;
@@ -33,21 +32,21 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: fonts.medium,
-    fontSize: 14,
+    fontSize: sf(16),
     color: colors.primary,
     opacity: 0.7,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   total: {
     fontFamily: fonts.extraBold,
-    fontSize: 36,
+    fontSize: sf(44),
     color: colors.primary,
   },
   date: {
     fontFamily: fonts.regular,
-    fontSize: 13,
+    fontSize: sf(15),
     color: colors.primary,
     opacity: 0.6,
-    marginTop: 4,
+    marginTop: 6,
   },
 });

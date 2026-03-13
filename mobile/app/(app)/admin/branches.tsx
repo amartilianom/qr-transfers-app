@@ -18,7 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/lib/auth-context';
 import { getBranches, createBranch, updateBranch } from '@/lib/queries';
 import { Branch } from '@/types/database';
-import { colors, fonts, radii, shadows } from '@/lib/theme';
+import { colors, fonts, radii, shadows, sf } from '@/lib/theme';
 
 type EditingState = { mode: 'new' } | { mode: 'edit'; branch: Branch } | null;
 
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontFamily: fonts.medium,
-    fontSize: 14,
+    fontSize: sf(16),
     color: colors.secondary,
   },
   titleRow: {
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fonts.extraBold,
-    fontSize: 26,
+    fontSize: sf(28),
     color: colors.primary,
   },
   centered: {
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontFamily: fonts.medium,
-    fontSize: 15,
+    fontSize: sf(17),
     color: colors.secondary,
   },
   branchCard: {
@@ -303,12 +303,12 @@ const styles = StyleSheet.create({
   },
   branchName: {
     fontFamily: fonts.semiBold,
-    fontSize: 15,
+    fontSize: sf(17),
     color: colors.primary,
   },
   branchAddress: {
     fontFamily: fonts.regular,
-    fontSize: 13,
+    fontSize: sf(15),
     color: colors.secondary,
     marginTop: 2,
   },
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
   },
   editText: {
     fontFamily: fonts.medium,
-    fontSize: 14,
+    fontSize: sf(16),
     color: colors.success,
   },
 
@@ -343,14 +343,14 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontFamily: fonts.semiBold,
-    fontSize: 11,
+    fontSize: sf(13),
     color: colors.secondary,
     letterSpacing: 0.8,
     marginTop: 14,
   },
   fieldInput: {
     fontFamily: fonts.medium,
-    fontSize: 15,
+    fontSize: sf(17),
     color: colors.primary,
     paddingVertical: 10,
   },
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontFamily: fonts.semiBold,
-    fontSize: 15,
+    fontSize: sf(17),
     color: colors.primary,
   },
   saveButton: {
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontFamily: fonts.bold,
-    fontSize: 15,
+    fontSize: sf(17),
     color: colors.surface,
   },
 });
