@@ -198,3 +198,23 @@ export async function updateInviteMember(inviteId: string, updates: { name?: str
 export async function cancelInvite(inviteId: string) {
   return supabase.from('invite').update({ status: 'rejected' }).eq('id', inviteId);
 }
+
+// ============================================================
+// AI Receipt Analysis
+// ============================================================
+
+export async function deleteTransfer(id: string) {
+  return supabase.from('transfer').update({ active: false }).eq('id', id);
+}
+
+export async function analyzeReceipt(imageBase64: string, mimeType = 'image/jpeg') {
+  return supabase.functions.invoke<{
+    amount: number | null;
+    provider: string | null;
+    transaction_id: string | null;
+    occurred_at: string | null;
+    error?: string;
+  }>('analyze-receipt', {
+    body: { imageBase64, mimeType },
+  });
+}

@@ -150,7 +150,7 @@ export default function HistoryScreen() {
           <View style={styles.cardWrapper}>
             <TransferCard
               transfer={item}
-              onPress={() => router.push({ pathname: '/(app)/transfer/confirm', params: { transferId: item.id } })}
+              onPress={() => router.push({ pathname: '/(app)/transfer/confirm', params: { transferId: item.id, from: 'history' } })}
             />
           </View>
         )}

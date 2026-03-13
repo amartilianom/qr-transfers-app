@@ -1,4 +1,4 @@
-export type TransferProvider = 'nequi' | 'daviplata' | 'bancolombia';
+export type TransferProvider = string;
 export type UserRole = 'admin' | 'collaborator';
 
 // Row types matching the Supabase schema.

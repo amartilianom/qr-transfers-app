@@ -8,7 +8,9 @@
       "Bash(find \"c:\\\\Users\\\\amart\\\\Software Development\\\\Apps\\\\qr-transfers-app\\\\mobile\\\\app\\\\\\(app\\)\" -type f \\\\\\( -name \"*detail*\" -o -name \"*transaction*\" \\\\\\))",
       "Bash(find \"c:\\\\Users\\\\amart\\\\Software Development\\\\Apps\\\\qr-transfers-app\\\\mobile\\\\app\\\\\\(app\\)\" -type f -name \"index.tsx\" -o -name \"*detail*\")",
       "Bash(find \"c:\\\\Users\\\\amart\\\\Software Development\\\\Apps\\\\qr-transfers-app\\\\mobile\\\\app\\\\\\(app\\)\" -type d)",
-      "Bash(find \"c:\\\\Users\\\\amart\\\\Software Development\\\\Apps\\\\qr-transfers-app\\\\mobile\\\\app\\\\\\(app\\)\\\\transfer\" -type f)"
+      "Bash(find \"c:\\\\Users\\\\amart\\\\Software Development\\\\Apps\\\\qr-transfers-app\\\\mobile\\\\app\\\\\\(app\\)\\\\transfer\" -type f)",
+      "Bash(grep -r \"OPENAI\\\\|ANTHROPIC\\\\|API_KEY\" 'c:\\\\Users\\\\amart\\\\Software Development\\\\Apps\\\\qr-transfers-app\\\\mobile' --include=*.ts --include=*.tsx --include=*.json --include=*.env*)",
+      "Bash(grep -r \"capture\\\\|CaptureScreen\" 'c:\\\\Users\\\\amart\\\\Software Development\\\\Apps\\\\qr-transfers-app\\\\mobile' --include=*.tsx --include=*.ts)"
     ]
   }
 }

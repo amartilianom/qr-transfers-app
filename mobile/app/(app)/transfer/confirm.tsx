@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import * as FileSystem from 'expo-file-system/legacy';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,6 +26,8 @@ import {
   checkDuplicateTransactionId,
   getTransfer,
   getReceiptSignedUrl,
+  analyzeReceipt,
+  deleteTransfer,
 } from '@/lib/queries';
 import { Transfer, TransferProvider } from '@/types/database';
 import { colors, fonts, radii, shadows, sf } from '@/lib/theme';
@@ -39,7 +42,7 @@ export default function ConfirmScreen() {
   const router = useRouter();
   // imageUri  → create mode
   // transferId → view mode
-  const { imageUri, transferId } = useLocalSearchParams<{ imageUri?: string; transferId?: string }>();
+  const { imageUri, transferId, from } = useLocalSearchParams<{ imageUri?: string; transferId?: string; from?: string }>();
   const { session, businessUser } = useAuth();
   const { currentBranch } = useBranch();
 
@@ -62,6 +65,9 @@ export default function ConfirmScreen() {
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [imagePreview, setImagePreview] = useState(false);
+  const [extracting, setExtracting] = useState(false);
+  const [extractError, setExtractError] = useState<string | null>(null);
+  const extractedRef = useRef(false);
 
   // ── Load existing transfer ──
   useEffect(() => {
@@ -79,6 +85,48 @@ export default function ConfirmScreen() {
       setViewLoading(false);
     })();
   }, [transferId]);
+
+  // ── AI extraction (create mode only, runs once) ──
+  useEffect(() => {
+    if (!imageUri || extractedRef.current) return;
+    extractedRef.current = true;
+    (async () => {
+      setExtracting(true);
+      try {
+        let b64: string;
+        if (Platform.OS === 'web') {
+          const resp = await fetch(imageUri);
+          const blob = await resp.blob();
+          b64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve((reader.result as string).split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } else {
+          b64 = await FileSystem.readAsStringAsync(imageUri, { encoding: 'base64' });
+        }
+        const { data, error } = await analyzeReceipt(b64);
+        if (error) {
+          setExtractError(`Error del servidor: ${JSON.stringify(error)}`);
+        } else if (data?.error) {
+          setExtractError(`Error de análisis: ${data.error}`);
+        } else if (data) {
+          if (data.amount != null) setAmount(String(data.amount));
+          if (data.provider) setProvider(data.provider);
+          if (data.transaction_id) setTransactionId(data.transaction_id);
+          if (data.occurred_at) {
+            const d = new Date(data.occurred_at);
+            if (!isNaN(d.getTime())) setOccurredAt(d);
+          }
+        }
+      } catch (e: any) {
+        setExtractError(`Excepción: ${e?.message ?? String(e)}`);
+      } finally {
+        setExtracting(false);
+      }
+    })();
+  }, [imageUri]);
 
   // ── Helpers ──
   const providerLabel = (v: TransferProvider) =>
@@ -143,6 +191,25 @@ export default function ConfirmScreen() {
     router.navigate('/(app)/(home)');
   }
 
+  async function handleDelete() {
+    Alert.alert(
+      'Eliminar transferencia',
+      '¿Estás seguro? Esta acción no se puede deshacer.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            const { error } = await deleteTransfer(transferId!);
+            if (error) { Alert.alert('Error', error.message); return; }
+            from === 'history' ? router.navigate('/(app)/(history)') : router.navigate('/(app)/(home)');
+          },
+        },
+      ],
+    );
+  }
+
   // ── Loading state (view mode) ──
   if (isViewMode && viewLoading) {
     return (
@@ -164,7 +231,7 @@ export default function ConfirmScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {/* Back button */}
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.backButton} onPress={() => from === 'history' ? router.navigate('/(app)/(history)') : router.navigate('/(app)/(home)')} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={22} color={colors.primary} />
         </TouchableOpacity>
 
@@ -191,6 +258,19 @@ export default function ConfirmScreen() {
 
           {/* Title */}
           <Text style={styles.title}>Verifica los datos</Text>
+
+          {/* AI extraction indicator */}
+          {extracting && (
+            <View style={styles.extractingRow}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={styles.extractingText}>Analizando comprobante…</Text>
+            </View>
+          )}
+          {extractError && (
+            <View style={styles.warningBox}>
+              <Text style={styles.warningText}>{extractError}</Text>
+            </View>
+          )}
 
           {/* Amount */}
           <Text style={styles.fieldLabel}>Monto del comprobante</Text>
@@ -284,13 +364,20 @@ export default function ConfirmScreen() {
           )}
         </ScrollView>
 
-        {/* Footer — only in create mode */}
-        {!isViewMode && (
-          <View style={styles.footer}>
+        {/* Footer */}
+        <View style={styles.footer}>
+          {isViewMode ? (
+            businessUser?.role === 'admin' && (
+              <TouchableOpacity style={styles.deleteButton} onPress={handleDelete} activeOpacity={0.8}>
+                <Ionicons name="trash-outline" size={18} color={colors.surface} />
+                <Text style={styles.deleteButtonText}>Eliminar registro</Text>
+              </TouchableOpacity>
+            )
+          ) : (
             <TouchableOpacity
-              style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+              style={[styles.saveButton, (saving || extracting) && styles.saveButtonDisabled]}
               onPress={handleSave}
-              disabled={saving}
+              disabled={saving || extracting}
               activeOpacity={0.8}
             >
               {saving
@@ -298,8 +385,8 @@ export default function ConfirmScreen() {
                 : <Text style={styles.saveButtonText}>Confirmar y Guardar</Text>
               }
             </TouchableOpacity>
-          </View>
-        )}
+          )}
+        </View>
       </KeyboardAvoidingView>
 
       {/* Date / time pickers (create mode only) */}
@@ -493,6 +580,20 @@ const styles = StyleSheet.create({
     fontSize: sf(17),
     color: colors.surface,
   },
+  deleteButton: {
+    backgroundColor: '#DC2626',
+    borderRadius: radii.button,
+    paddingVertical: 18,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  deleteButtonText: {
+    fontFamily: fonts.semiBold,
+    fontSize: sf(17),
+    color: colors.surface,
+  },
 
   // Provider modal
   modalOverlay: {
@@ -534,6 +635,19 @@ const styles = StyleSheet.create({
   modalOptionTextActive: {
     fontFamily: fonts.semiBold,
     color: colors.success,
+  },
+
+  // AI extraction indicator
+  extractingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  extractingText: {
+    fontFamily: fonts.regular,
+    fontSize: sf(14),
+    color: colors.secondary,
   },
 
   // Full image preview

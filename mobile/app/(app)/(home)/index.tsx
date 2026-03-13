@@ -67,7 +67,7 @@ export default function HomeScreen() {
         renderItem={({ item }) => (
             <TransferCard
               transfer={item}
-              onPress={() => router.push({ pathname: '/(app)/transfer/confirm', params: { transferId: item.id } })}
+              onPress={() => router.push({ pathname: '/(app)/transfer/confirm', params: { transferId: item.id, from: 'home' } })}
             />
           )}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
