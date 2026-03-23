@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useBranch } from '@/lib/branch-context';
+import { useAuth } from '@/lib/auth-context';
 import { getTransfersByDateRange } from '@/lib/queries';
 import { Transfer } from '@/types/database';
 import TransferCard from '@/components/TransferCard';
@@ -49,6 +50,8 @@ function groupByDate(transfers: Transfer[]): Section[] {
 export default function HistoryScreen() {
   const router = useRouter();
   const { selectedBranchIds } = useBranch();
+  const { currentBusinessUser, session } = useAuth();
+  const isCollaborator = currentBusinessUser?.role !== 'admin';
   const [period, setPeriod] = useState<Period>('day');
   const [offset, setOffset] = useState(0);
   const [allFetched, setAllFetched] = useState<Transfer[]>([]);
@@ -86,24 +89,31 @@ export default function HistoryScreen() {
     setOffset(0);
   }
 
+  const scopedFetched = useMemo(
+    () => isCollaborator
+      ? allFetched.filter((t) => t.created_by === session?.user.id)
+      : allFetched,
+    [allFetched, isCollaborator, session],
+  );
+
   // List and total use the narrower listStart/listEnd (relevant for 'day' mode)
   const listTransfers = useMemo(() => {
     const { listStart, listEnd } = periodInfo;
-    return allFetched.filter((t) => {
+    return scopedFetched.filter((t) => {
       const d = new Date(t.occurred_at).getTime();
       return d >= listStart.getTime() && d <= listEnd.getTime();
     });
-  }, [allFetched, periodInfo]);
+  }, [scopedFetched, periodInfo]);
 
   // In 'day' mode the chart only plots the selected day — other bars stay at zero.
   // In all other modes the chart spans the full fetched period.
   const chartBars = useMemo(
     () => buildChartBars(
       periodInfo.emptyBars,
-      period === 'day' ? listTransfers : allFetched,
+      period === 'day' ? listTransfers : scopedFetched,
       periodInfo.getBucketIndex,
     ),
-    [period, listTransfers, allFetched, periodInfo],
+    [period, listTransfers, scopedFetched, periodInfo],
   );
 
   const total = useMemo(
@@ -125,6 +135,8 @@ export default function HistoryScreen() {
       onPeriodChange={handlePeriodChange}
       onPrev={() => setOffset((o) => o - 1)}
       onNext={() => setOffset((o) => Math.min(o + 1, 0))}
+      showChart={!isCollaborator}
+      transferCount={isCollaborator ? listTransfers.length : undefined}
     />
   );
 

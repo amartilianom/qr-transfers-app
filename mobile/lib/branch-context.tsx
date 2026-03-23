@@ -46,14 +46,24 @@ export function BranchProvider({ children }: { children: React.ReactNode }) {
           setCurrentBranch(last);
           setIsAllBranches(false);
         } else {
-          // Default to "Todas" when last branch not found
+          // Last branch not found — collaborators default to first, admins to "Todas"
+          if (businessUser.role !== 'admin') {
+            setCurrentBranch(branchList[0]);
+            setIsAllBranches(false);
+          } else {
+            setCurrentBranch(null);
+            setIsAllBranches(true);
+          }
+        }
+      } else {
+        // Collaborators must always have a specific branch — default to first
+        if (businessUser.role !== 'admin') {
+          setCurrentBranch(branchList[0]);
+          setIsAllBranches(false);
+        } else {
           setCurrentBranch(null);
           setIsAllBranches(true);
         }
-      } else {
-        // Default to "Todas" when no last selection
-        setCurrentBranch(null);
-        setIsAllBranches(true);
       }
     }
 

@@ -33,9 +33,26 @@ import { Transfer, TransferProvider } from '@/types/database';
 import { colors, fonts, radii, shadows, sf } from '@/lib/theme';
 
 const providers: { value: TransferProvider; label: string }[] = [
-  { value: 'nequi', label: 'Nequi' },
-  { value: 'daviplata', label: 'Daviplata' },
+  { value: 'bancamia', label: 'Bancamía' },
   { value: 'bancolombia', label: 'Bancolombia' },
+  { value: 'banco caja social', label: 'Banco Caja Social' },
+  { value: 'banco de bogota', label: 'Banco de Bogotá' },
+  { value: 'banco de occidente', label: 'Banco de Occidente' },
+  { value: 'banco popular', label: 'Banco Popular' },
+  { value: 'banco w', label: 'Banco W' },
+  { value: 'bbva', label: 'BBVA Colombia' },
+  { value: 'bold', label: 'Bold' },
+  { value: 'confiar', label: 'Confiar' },
+  { value: 'daviplata', label: 'Daviplata' },
+  { value: 'davivienda', label: 'Davivienda' },
+  { value: 'gnb sudameris', label: 'GNB Sudameris' },
+  { value: 'itau', label: 'Itaú' },
+  { value: 'lulo bank', label: 'Lulo Bank' },
+  { value: 'movii', label: 'Movii' },
+  { value: 'nequi', label: 'Nequi' },
+  { value: 'nubank', label: 'Nubank' },
+  { value: 'rappipay', label: 'RappiPay' },
+  { value: 'scotiabank colpatria', label: 'Scotiabank Colpatria' },
 ];
 
 export default function ConfirmScreen() {
@@ -248,7 +265,7 @@ export default function ConfirmScreen() {
               <Image
                 source={{ uri: isViewMode ? viewImageUri! : imageUri! }}
                 style={styles.receiptImage}
-                resizeMode="cover"
+                resizeMode="contain"
               />
             ) : (
               <View style={styles.imagePlaceholder}>
@@ -410,21 +427,23 @@ export default function ConfirmScreen() {
       {/* Provider picker modal (create mode only) */}
       <Modal visible={showProviderPicker} transparent animationType="slide">
         <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowProviderPicker(false)} activeOpacity={1}>
-          <View style={styles.modalSheet}>
+          <View style={styles.modalSheet} onStartShouldSetResponder={() => true}>
             <Text style={styles.modalTitle}>Selecciona el banco</Text>
-            {providers.map((p) => (
-              <TouchableOpacity
-                key={p.value}
-                style={[styles.modalOption, provider === p.value && styles.modalOptionActive]}
-                onPress={() => { setProvider(p.value); setShowProviderPicker(false); }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.modalOptionText, provider === p.value && styles.modalOptionTextActive]}>
-                  {p.label}
-                </Text>
-                {provider === p.value && <Ionicons name="checkmark" size={20} color={colors.success} />}
-              </TouchableOpacity>
-            ))}
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              {providers.map((p) => (
+                <TouchableOpacity
+                  key={p.value}
+                  style={[styles.modalOption, provider === p.value && styles.modalOptionActive]}
+                  onPress={() => { setProvider(p.value); setShowProviderPicker(false); }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.modalOptionText, provider === p.value && styles.modalOptionTextActive]}>
+                    {p.label}
+                  </Text>
+                  {provider === p.value && <Ionicons name="checkmark" size={20} color={colors.success} />}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -465,7 +484,7 @@ const styles = StyleSheet.create({
   // Receipt image
   imageContainer: {
     width: '100%',
-    height: 200,
+    height: 300,
     borderRadius: radii.card,
     overflow: 'hidden',
     backgroundColor: colors.surface,
@@ -609,7 +628,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     padding: 24,
     paddingBottom: 40,
-    gap: 4,
+    maxHeight: '70%',
   },
   modalTitle: {
     fontFamily: fonts.bold,

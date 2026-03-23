@@ -40,7 +40,9 @@ export default function AppHeader({ title }: AppHeaderProps) {
 
       {/* Row 3: branch selector */}
       <View style={styles.branchSection}>
-        <Text style={styles.branchLabel}>Sucursal en la que te encuentras</Text>
+        <Text style={styles.branchLabel}>
+          {isAdmin ? 'Sucursal en la que te encuentras' : 'Estás registrando en:'}
+        </Text>
         <TouchableOpacity
           style={styles.branchSelector}
           onPress={() => canSwitchBranch && setPickerVisible(true)}

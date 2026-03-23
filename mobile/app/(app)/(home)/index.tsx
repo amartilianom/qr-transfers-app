@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,23 +9,36 @@ import {
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useBranch } from '@/lib/branch-context';
+import { useAuth } from '@/lib/auth-context';
 import { getTodayTransfers } from '@/lib/queries';
 import { Transfer } from '@/types/database';
 import HeroCard from '@/components/HeroCard';
 import TransferCard from '@/components/TransferCard';
-import BranchPicker from '@/components/BranchPicker';
 import AppHeader from '@/components/AppHeader';
 import { colors, fonts } from '@/lib/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { selectedBranchIds, needsPicker } = useBranch();
+  const { selectedBranchIds } = useBranch();
+  const { currentBusinessUser, session } = useAuth();
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const todayTotal = transfers.reduce((sum, t) => sum + Number(t.amount), 0);
+  const isCollaborator = currentBusinessUser?.role !== 'admin';
+
+  const visibleTransfers = useMemo(
+    () => isCollaborator
+      ? transfers.filter((t) => t.created_by === session?.user.id)
+      : transfers,
+    [transfers, isCollaborator, session],
+  );
+
+  const todayTotal = useMemo(
+    () => visibleTransfers.reduce((sum, t) => sum + Number(t.amount), 0),
+    [visibleTransfers],
+  );
 
   const fetchData = useCallback(async () => {
     if (selectedBranchIds.length === 0) return;
@@ -50,7 +63,6 @@ export default function HomeScreen() {
   if (selectedBranchIds.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
-        <BranchPicker visible={needsPicker} />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -62,14 +74,14 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <AppHeader title="Tu Resumen" />
       <FlatList
-        data={transfers}
+        data={visibleTransfers}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-            <TransferCard
-              transfer={item}
-              onPress={() => router.push({ pathname: '/(app)/transfer/confirm', params: { transferId: item.id, from: 'home' } })}
-            />
-          )}
+          <TransferCard
+            transfer={item}
+            onPress={() => router.push({ pathname: '/(app)/transfer/confirm', params: { transferId: item.id, from: 'home' } })}
+          />
+        )}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         contentContainerStyle={styles.listContent}
         refreshControl={
@@ -77,8 +89,13 @@ export default function HomeScreen() {
         }
         ListHeaderComponent={
           <View style={styles.heroContainer}>
-            <HeroCard total={todayTotal} />
-            <Text style={styles.sectionHeader}>Transacciones de hoy:</Text>
+            <HeroCard
+              total={todayTotal}
+              label={isCollaborator ? 'Mi total de hoy' : undefined}
+            />
+            <Text style={styles.sectionHeader}>
+              {isCollaborator ? 'Mis transferencias de hoy:' : 'Transacciones de hoy:'}
+            </Text>
           </View>
         }
         ListEmptyComponent={

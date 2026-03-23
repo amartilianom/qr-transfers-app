@@ -25,8 +25,10 @@ import {
   removeTeamMember,
   updateInviteMember,
   cancelInvite,
+  getMemberBranchAssignments,
+  setMemberBranches,
 } from '@/lib/queries';
-import { BusinessUser, Invite } from '@/types/database';
+import { Branch, BusinessUser, Invite } from '@/types/database';
 import PhoneInput from '@/components/PhoneInput';
 import { colors, fonts, radii, shadows, sf } from '@/lib/theme';
 
@@ -44,18 +46,31 @@ export default function TeamScreen() {
   const router = useRouter();
   const { displayName, currentBusinessUser, session } = useAuth();
   const [items, setItems] = useState<MemberItem[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [assignmentMap, setAssignmentMap] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<EditingState>(null);
   const [formName, setFormName] = useState('');
   const [formPhone, setFormPhone] = useState('');
+  const [formBranchIds, setFormBranchIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!currentBusinessUser) return;
-    const [{ data: members }, { data: invites }] = await Promise.all([
+    const [{ data: members }, { data: invites }, { data: branchList }] = await Promise.all([
       getTeamCollaborators(currentBusinessUser.business_id),
       getPendingInvites(currentBusinessUser.business_id),
+      getBranches(),
     ]);
+    const memberIds = (members ?? []).map((m) => m.id);
+    const { data: assignments } = await getMemberBranchAssignments(memberIds);
+    const map: Record<string, string[]> = {};
+    for (const a of assignments ?? []) {
+      if (!map[a.business_user_id]) map[a.business_user_id] = [];
+      map[a.business_user_id].push(a.branch_id);
+    }
+    setBranches(branchList ?? []);
+    setAssignmentMap(map);
     const list: MemberItem[] = [
       ...(members ?? []).map((m): MemberItem => ({ kind: 'member', data: m })),
       ...(invites ?? []).map((i): MemberItem => ({ kind: 'invite', data: i })),
@@ -79,6 +94,7 @@ export default function TeamScreen() {
   function openEditMember(item: BusinessUser) {
     setFormName(item.name ?? '');
     setFormPhone(item.whatsapp ?? '');
+    setFormBranchIds(assignmentMap[item.id] ?? []);
     setEditing({ mode: 'member', item });
   }
 
@@ -115,11 +131,15 @@ export default function TeamScreen() {
       );
       if (error) { Alert.alert('Error', error.message); setSaving(false); return; }
     } else if (editing?.mode === 'member') {
-      const { error } = await updateTeamMember(editing.item.id, {
-        name: formName.trim(),
-        whatsapp: formPhone.trim(),
-      });
-      if (error) { Alert.alert('Error', (error as any).message); setSaving(false); return; }
+      const [{ error }, { error: branchError }] = await Promise.all([
+        updateTeamMember(editing.item.id, { name: formName.trim(), whatsapp: formPhone.trim() }),
+        setMemberBranches(editing.item.id, formBranchIds),
+      ]);
+      if (error || branchError) {
+        Alert.alert('Error', ((error ?? branchError) as any).message);
+        setSaving(false);
+        return;
+      }
     } else if (editing?.mode === 'invite') {
       const { error } = await updateInviteMember(editing.item.id, {
         name: formName.trim(),
@@ -219,6 +239,34 @@ export default function TeamScreen() {
               </View>
             </View>
 
+            {editing?.mode === 'member' && branches.length > 0 && (
+              <View style={styles.formCard}>
+                <Text style={styles.fieldLabel}>SUCURSALES</Text>
+                {branches.map((b, idx) => {
+                  const active = formBranchIds.includes(b.id);
+                  const toggle = () =>
+                    setFormBranchIds((prev) =>
+                      active ? prev.filter((id) => id !== b.id) : [...prev, b.id],
+                    );
+                  return (
+                    <View key={b.id}>
+                      {idx > 0 && <View style={styles.fieldDivider} />}
+                      <TouchableOpacity
+                        style={styles.branchRow}
+                        onPress={toggle}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.branchRowName}>{b.name}</Text>
+                        <View style={[styles.checkbox, active && styles.checkboxActive]}>
+                          {active && <Ionicons name="checkmark" size={14} color={colors.surface} />}
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+
             <View style={styles.formButtons}>
               <TouchableOpacity style={styles.cancelButton} onPress={cancelEdit} activeOpacity={0.7}>
                 <Text style={styles.cancelButtonText}>Cancelar</Text>
@@ -266,12 +314,28 @@ export default function TeamScreen() {
                   ? (item.data as Invite).phone
                   : (item.data as BusinessUser).whatsapp;
 
+                const memberBranchIds = !isInvite
+                  ? (assignmentMap[(item.data as BusinessUser).id] ?? [])
+                  : (item.data as Invite).branch_ids;
+                const memberBranchNames = memberBranchIds
+                  .map((id) => branches.find((b) => b.id === id)?.name)
+                  .filter(Boolean) as string[];
+
                 return (
                   <View style={styles.memberCard}>
                     <View style={styles.memberTop}>
                       <View style={styles.memberInfo}>
                         <Text style={styles.memberName}>{name || '—'}</Text>
                         {phone ? <Text style={styles.memberPhone}>{phone}</Text> : null}
+                        {memberBranchNames.length > 0 && (
+                          <View style={styles.branchPills}>
+                            {memberBranchNames.map((n) => (
+                              <View key={n} style={styles.branchPill}>
+                                <Text style={styles.branchPillText}>{n}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        )}
                       </View>
                       <View style={[styles.badge, isInvite ? styles.badgePending : styles.badgeActive]}>
                         <Text style={[styles.badgeText, isInvite && styles.badgeTextPending]}>
@@ -437,6 +501,23 @@ const styles = StyleSheet.create({
   badgeTextPending: {
     color: '#B45309',
   },
+  branchPills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 8,
+  },
+  branchPill: {
+    backgroundColor: colors.highlight,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  branchPillText: {
+    fontFamily: fonts.medium,
+    fontSize: sf(13),
+    color: colors.primary,
+  },
   memberActions: {
     flexDirection: 'row',
     gap: 10,
@@ -521,6 +602,30 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.border,
     marginTop: 4,
+  },
+  branchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+  },
+  branchRowName: {
+    fontFamily: fonts.medium,
+    fontSize: sf(17),
+    color: colors.primary,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   phoneWrapper: {
     marginTop: 4,

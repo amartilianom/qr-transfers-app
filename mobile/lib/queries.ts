@@ -32,12 +32,15 @@ export async function getTodayTransfers(branchIds: string | string[]) {
   const ids = Array.isArray(branchIds) ? branchIds : [branchIds];
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date();
+  endOfDay.setHours(23, 59, 59, 999);
 
   return supabase
     .from('transfer')
     .select('*')
     .in('branch_id', ids)
     .gte('occurred_at', startOfDay.toISOString())
+    .lte('occurred_at', endOfDay.toISOString())
     .eq('active', true)
     .order('occurred_at', { ascending: false })
     .returns<Transfer[]>();
@@ -199,6 +202,27 @@ export async function updateInviteMember(inviteId: string, updates: { name?: str
 
 export async function cancelInvite(inviteId: string) {
   return supabase.from('invite').update({ status: 'rejected' }).eq('id', inviteId);
+}
+
+export async function getMemberBranchAssignments(buIds: string[]) {
+  if (buIds.length === 0) return { data: [] as { business_user_id: string; branch_id: string }[], error: null };
+  return supabase
+    .from('business_user_branch')
+    .select('business_user_id, branch_id')
+    .in('business_user_id', buIds);
+}
+
+export async function setMemberBranches(buId: string, branchIds: string[]) {
+  const { error: delError } = await supabase
+    .from('business_user_branch')
+    .delete()
+    .eq('business_user_id', buId);
+  if (delError) return { error: delError };
+  if (branchIds.length === 0) return { error: null };
+  const { error } = await supabase
+    .from('business_user_branch')
+    .insert(branchIds.map((bid) => ({ business_user_id: buId, branch_id: bid })));
+  return { error };
 }
 
 // ============================================================

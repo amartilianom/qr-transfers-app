@@ -5,8 +5,10 @@ import {
   StyleSheet,
   Modal,
   FlatList,
+  Alert,
 } from 'react-native';
 import { useBranch } from '@/lib/branch-context';
+import { useAuth } from '@/lib/auth-context';
 import { colors, fonts, radii, shadows } from '@/lib/theme';
 import { Branch } from '@/types/database';
 
@@ -17,10 +19,29 @@ interface BranchPickerProps {
 
 export default function BranchPicker({ visible, onClose }: BranchPickerProps) {
   const { branches, selectBranch, selectAllBranches, currentBranch, isAllBranches } = useBranch();
+  const { currentBusinessUser } = useAuth();
+  const isCollaborator = currentBusinessUser?.role !== 'admin';
 
   async function handleSelect(branch: Branch) {
-    await selectBranch(branch.id);
-    onClose?.();
+    if (isCollaborator && currentBranch && currentBranch.id !== branch.id) {
+      Alert.alert(
+        '¿Cambiar de sucursal?',
+        `Asegúrate de haber terminado tu turno en ${currentBranch.name} antes de cambiar.`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Cambiar',
+            onPress: async () => {
+              await selectBranch(branch.id);
+              onClose?.();
+            },
+          },
+        ],
+      );
+    } else {
+      await selectBranch(branch.id);
+      onClose?.();
+    }
   }
 
   function handleSelectAll() {
@@ -30,22 +51,25 @@ export default function BranchPicker({ visible, onClose }: BranchPickerProps) {
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.overlay}>
-        <View style={styles.sheet}>
+      <TouchableOpacity style={styles.overlay} onPress={onClose} activeOpacity={1}>
+        <View style={styles.sheet} onStartShouldSetResponder={() => true}>
           <Text style={styles.title}>Selecciona una sucursal</Text>
 
-          {/* "Todas" option */}
-          <TouchableOpacity
-            style={[styles.branchItem, isAllBranches && styles.branchItemActive]}
-            onPress={handleSelectAll}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.branchName, isAllBranches && styles.branchNameActive]}>
-              Todas
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.separator} />
+          {/* "Todas" option — admins only */}
+          {!isCollaborator && (
+            <>
+              <TouchableOpacity
+                style={[styles.branchItem, isAllBranches && styles.branchItemActive]}
+                onPress={handleSelectAll}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.branchName, isAllBranches && styles.branchNameActive]}>
+                  Todas
+                </Text>
+              </TouchableOpacity>
+              <View style={styles.separator} />
+            </>
+          )}
 
           <FlatList
             data={branches}
@@ -72,7 +96,7 @@ export default function BranchPicker({ visible, onClose }: BranchPickerProps) {
             ItemSeparatorComponent={() => <View style={styles.separator} />}
           />
         </View>
-      </View>
+      </TouchableOpacity>
     </Modal>
   );
 }

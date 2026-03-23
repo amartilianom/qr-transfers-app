@@ -23,6 +23,8 @@ interface Props {
   onPeriodChange: (p: Period) => void;
   onPrev: () => void;
   onNext: () => void;
+  showChart?: boolean;
+  transferCount?: number;
 }
 
 export default function HistoryDashboard({
@@ -36,6 +38,8 @@ export default function HistoryDashboard({
   onPeriodChange,
   onPrev,
   onNext,
+  showChart = true,
+  transferCount,
 }: Props) {
   const maxValue = Math.max(...chartBars.map((b) => b.value), 1);
 
@@ -89,9 +93,12 @@ export default function HistoryDashboard({
 
       {/* Total */}
       <Text style={styles.total}>{formatCOP(total)}</Text>
+      {transferCount !== undefined && (
+        <Text style={styles.transferCount}>{transferCount} transferencias</Text>
+      )}
 
       {/* Bar chart */}
-      <View style={styles.chartContainer}>
+      {showChart && <View style={styles.chartContainer}>
         <View style={styles.barsRow}>
           {chartBars.map((bar, i) => {
             const barH = maxValue > 0 ? (bar.value / maxValue) * BAR_MAX_HEIGHT : 0;
@@ -111,7 +118,7 @@ export default function HistoryDashboard({
           <Text style={styles.yLabel}>{formatChartValue(maxValue)}</Text>
           <Text style={styles.yLabel}>$0</Text>
         </View>
-      </View>
+      </View>}
     </View>
   );
 }
@@ -186,6 +193,15 @@ const styles = StyleSheet.create({
     fontSize: sf(38),
     color: colors.primary,
     textAlign: 'center',
+    marginBottom: 20,
+  },
+
+  transferCount: {
+    fontFamily: fonts.regular,
+    fontSize: sf(14),
+    color: colors.secondary,
+    textAlign: 'center',
+    marginTop: 4,
     marginBottom: 20,
   },
 
