@@ -11,18 +11,16 @@ interface BranchContextValue {
   selectBranch: (branchId: string) => Promise<void>;
   selectAllBranches: () => void;
   isLoading: boolean;
-  needsPicker: boolean;
 }
 
 const BranchContext = createContext<BranchContextValue | null>(null);
 
 export function BranchProvider({ children }: { children: React.ReactNode }) {
-  const { businessUser } = useAuth();
+  const { currentBusinessUser: businessUser } = useAuth();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [currentBranch, setCurrentBranch] = useState<Branch | null>(null);
   const [isAllBranches, setIsAllBranches] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [needsPicker, setNeedsPicker] = useState(false);
 
   const fetchBranches = useCallback(async () => {
     if (!businessUser) return;
@@ -41,7 +39,6 @@ export function BranchProvider({ children }: { children: React.ReactNode }) {
     if (branchList.length === 1) {
       setCurrentBranch(branchList[0]);
       setIsAllBranches(false);
-      setNeedsPicker(false);
     } else if (branchList.length > 1) {
       if (businessUser.last_branch_id) {
         const last = branchList.find((b) => b.id === businessUser.last_branch_id);
@@ -58,7 +55,6 @@ export function BranchProvider({ children }: { children: React.ReactNode }) {
         setCurrentBranch(null);
         setIsAllBranches(true);
       }
-      setNeedsPicker(false);
     }
 
     setIsLoading(false);
@@ -75,7 +71,6 @@ export function BranchProvider({ children }: { children: React.ReactNode }) {
 
       setCurrentBranch(branch);
       setIsAllBranches(false);
-      setNeedsPicker(false);
 
       await supabase
         .from('business_user')
@@ -88,7 +83,6 @@ export function BranchProvider({ children }: { children: React.ReactNode }) {
   const selectAllBranches = useCallback(() => {
     setCurrentBranch(null);
     setIsAllBranches(true);
-    setNeedsPicker(false);
   }, []);
 
   const selectedBranchIds = useMemo(
@@ -98,7 +92,7 @@ export function BranchProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <BranchContext.Provider
-      value={{ branches, currentBranch, isAllBranches, selectedBranchIds, selectBranch, selectAllBranches, isLoading, needsPicker }}
+      value={{ branches, currentBranch, isAllBranches, selectedBranchIds, selectBranch, selectAllBranches, isLoading }}
     >
       {children}
     </BranchContext.Provider>

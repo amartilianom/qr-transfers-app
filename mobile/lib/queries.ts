@@ -67,12 +67,12 @@ export async function getReceiptSignedUrl(path: string) {
   return supabase.storage.from('receipts').createSignedUrl(path, 60 * 60);
 }
 
-export async function checkDuplicateTransactionId(txnId: string, branchId: string) {
+export async function checkDuplicateTransactionId(txnId: string, businessId: string) {
   return supabase
     .from('transfer')
-    .select('id, amount, provider, occurred_at')
+    .select('id, amount, provider, occurred_at, branch:branch_id!inner(business_id)')
     .eq('transaction_id', txnId)
-    .eq('branch_id', branchId)
+    .eq('branch.business_id', businessId)
     .eq('active', true);
 }
 
@@ -83,9 +83,11 @@ export async function checkDuplicateTransactionId(txnId: string, branchId: strin
 export async function uploadReceipt(localUri: string, storagePath: string) {
   const response = await fetch(localUri);
   const blob = await response.blob();
+  const ext = localUri.split('.').pop()?.toLowerCase();
+  const contentType = ext === 'png' ? 'image/png' : ext === 'gif' ? 'image/gif' : 'image/jpeg';
 
   return supabase.storage.from('receipts').upload(storagePath, blob, {
-    contentType: 'image/jpeg',
+    contentType,
     upsert: false,
   });
 }

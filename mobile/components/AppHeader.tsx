@@ -14,10 +14,10 @@ interface AppHeaderProps {
 export default function AppHeader({ title }: AppHeaderProps) {
   const router = useRouter();
   const { currentBranch, isAllBranches, branches } = useBranch();
-  const { businessUser, displayName, signOut } = useAuth();
+  const { currentBusinessUser, displayName, signOut } = useAuth();
   const [pickerVisible, setPickerVisible] = useState(false);
 
-  const isAdmin = businessUser?.role === 'admin';
+  const isAdmin = currentBusinessUser?.role === 'admin';
   const canSwitchBranch = branches.length >= 1;
   const branchLabel = isAllBranches ? 'Todas' : (currentBranch?.name ?? '—');
 

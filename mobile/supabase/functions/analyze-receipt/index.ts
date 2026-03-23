@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 
@@ -12,13 +13,29 @@ Return ONLY a JSON object with these fields:
 Do not include any other text. Only output the JSON object.`;
 
 serve(async (req) => {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-      },
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  // Verify caller is authenticated
+  const authHeader = req.headers.get('Authorization');
+  const supabaseClient = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+  );
+  const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
+    authHeader?.replace('Bearer ', '') ?? '',
+  );
+  if (authError || !user) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -91,14 +108,12 @@ serve(async (req) => {
         transaction_id: extracted.transaction_id ?? null,
         occurred_at: extracted.occurred_at ?? null,
       },
-      {
-        headers: { 'Access-Control-Allow-Origin': '*' },
-      },
+      { headers: corsHeaders },
     );
   } catch (err) {
     return Response.json(
       { error: err instanceof Error ? err.message : String(err) },
-      { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } },
+      { status: 200, headers: corsHeaders },
     );
   }
 });

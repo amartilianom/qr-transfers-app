@@ -15,9 +15,9 @@ type MenuItem = {
 
 export default function AdminScreen() {
   const router = useRouter();
-  const { displayName, businessUser, signOut } = useAuth();
+  const { displayName, currentBusinessUser, signOut } = useAuth();
 
-  const isAdmin = businessUser?.role === 'admin';
+  const isAdmin = currentBusinessUser?.role === 'admin';
 
   const menuItems: MenuItem[] = [
     {

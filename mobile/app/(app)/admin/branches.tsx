@@ -24,7 +24,7 @@ type EditingState = { mode: 'new' } | { mode: 'edit'; branch: Branch } | null;
 
 export default function BranchesScreen() {
   const router = useRouter();
-  const { displayName, businessUser } = useAuth();
+  const { displayName, currentBusinessUser } = useAuth();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<EditingState>(null);
@@ -65,8 +65,8 @@ export default function BranchesScreen() {
     setSaving(true);
 
     if (editing?.mode === 'new') {
-      if (!businessUser) return;
-      const { error } = await createBranch(businessUser.business_id, formName.trim(), formAddress.trim() || undefined);
+      if (!currentBusinessUser) return;
+      const { error } = await createBranch(currentBusinessUser.business_id, formName.trim(), formAddress.trim() || undefined);
       if (error) {
         Alert.alert('Error', error.message);
         setSaving(false);

@@ -5,7 +5,6 @@ import { BusinessUser } from '@/types/database';
 
 interface AuthContextValue {
   session: Session | null;
-  businessUser: BusinessUser | null; // Deprecated: use currentBusinessUser
   currentBusinessUser: BusinessUser | null;
   allBusinessUsers: BusinessUser[];
   displayName: string;
@@ -123,7 +122,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         session,
-        businessUser: currentBusinessUser, // Backward compat
         currentBusinessUser,
         allBusinessUsers,
         displayName,

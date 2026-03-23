@@ -43,7 +43,7 @@ export default function ConfirmScreen() {
   // imageUri  → create mode
   // transferId → view mode
   const { imageUri, transferId, from } = useLocalSearchParams<{ imageUri?: string; transferId?: string; from?: string }>();
-  const { session, businessUser } = useAuth();
+  const { session, currentBusinessUser } = useAuth();
   const { currentBranch } = useBranch();
 
   const isViewMode = !!transferId;
@@ -150,8 +150,8 @@ export default function ConfirmScreen() {
   });
 
   async function handleCheckDuplicate() {
-    if (!transactionId.trim() || !currentBranch) return;
-    const { data } = await checkDuplicateTransactionId(transactionId.trim(), currentBranch.id);
+    if (!transactionId.trim() || !currentBusinessUser) return;
+    const { data } = await checkDuplicateTransactionId(transactionId.trim(), currentBusinessUser.business_id);
     if (data && data.length > 0) {
       setDuplicateWarning(
         `Ya existe una transferencia con este ID (${data[0].provider}, $${data[0].amount}). Puedes guardar de todas formas.`,
@@ -172,7 +172,8 @@ export default function ConfirmScreen() {
 
     let receiptPath: string | null = null;
     if (imageUri) {
-      const storagePath = `${businessUser!.business_id}/${currentBranch.id}/${Date.now()}.jpg`;
+      const ext = imageUri.split('.').pop()?.toLowerCase() ?? 'jpg';
+      const storagePath = `${currentBusinessUser!.business_id}/${currentBranch.id}/${Date.now()}.${ext}`;
       const { error: uploadError } = await uploadReceipt(imageUri, storagePath);
       if (!uploadError) receiptPath = storagePath;
     }
@@ -368,7 +369,7 @@ export default function ConfirmScreen() {
         {/* Footer */}
         <View style={styles.footer}>
           {isViewMode ? (
-            businessUser?.role === 'admin' && (
+            currentBusinessUser?.role === 'admin' && (
               <TouchableOpacity style={styles.deleteButton} onPress={handleDelete} activeOpacity={0.8}>
                 <Ionicons name="trash-outline" size={18} color={colors.surface} />
                 <Text style={styles.deleteButtonText}>Eliminar registro</Text>

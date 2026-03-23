@@ -42,7 +42,7 @@ type EditingState =
 
 export default function TeamScreen() {
   const router = useRouter();
-  const { displayName, businessUser, session } = useAuth();
+  const { displayName, currentBusinessUser, session } = useAuth();
   const [items, setItems] = useState<MemberItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<EditingState>(null);
@@ -51,10 +51,10 @@ export default function TeamScreen() {
   const [saving, setSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
-    if (!businessUser) return;
+    if (!currentBusinessUser) return;
     const [{ data: members }, { data: invites }] = await Promise.all([
-      getTeamCollaborators(businessUser.business_id),
-      getPendingInvites(businessUser.business_id),
+      getTeamCollaborators(currentBusinessUser.business_id),
+      getPendingInvites(currentBusinessUser.business_id),
     ]);
     const list: MemberItem[] = [
       ...(members ?? []).map((m): MemberItem => ({ kind: 'member', data: m })),
@@ -62,7 +62,7 @@ export default function TeamScreen() {
     ];
     setItems(list);
     setLoading(false);
-  }, [businessUser]);
+  }, [currentBusinessUser]);
 
   useFocusEffect(
     useCallback(() => {
@@ -97,7 +97,7 @@ export default function TeamScreen() {
     setSaving(true);
 
     if (editing?.mode === 'new') {
-      if (!businessUser || !session) { setSaving(false); return; }
+      if (!currentBusinessUser || !session) { setSaving(false); return; }
       const { data: branches } = await getBranches();
       const branchIds = (branches ?? []).map((b) => b.id);
       if (branchIds.length === 0) {
@@ -106,7 +106,7 @@ export default function TeamScreen() {
         return;
       }
       const { error } = await createInvite(
-        businessUser.business_id,
+        currentBusinessUser.business_id,
         session.user.id,
         'collaborator',
         branchIds,
