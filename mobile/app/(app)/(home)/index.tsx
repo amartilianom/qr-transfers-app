@@ -15,18 +15,21 @@ import { Transfer } from '@/types/database';
 import HeroCard from '@/components/HeroCard';
 import TransferCard from '@/components/TransferCard';
 import AppHeader from '@/components/AppHeader';
-import { colors, fonts } from '@/lib/theme';
+import { colors, fonts, formatCOP, radii, shadows, sf } from '@/lib/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+type BranchStat = { id: string; name: string; total: number; count: number };
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { selectedBranchIds } = useBranch();
+  const { selectedBranchIds, branches, isAllBranches } = useBranch();
   const { currentBusinessUser, session } = useAuth();
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const isCollaborator = currentBusinessUser?.role !== 'admin';
+  const showBreakdown = !isCollaborator && isAllBranches && branches.length > 1;
 
   const visibleTransfers = useMemo(
     () => isCollaborator
@@ -39,6 +42,14 @@ export default function HomeScreen() {
     () => visibleTransfers.reduce((sum, t) => sum + Number(t.amount), 0),
     [visibleTransfers],
   );
+
+  const branchStats = useMemo<BranchStat[]>(() => {
+    if (!showBreakdown) return [];
+    return branches.map((b) => {
+      const bt = transfers.filter((t) => t.branch_id === b.id);
+      return { id: b.id, name: b.name, total: bt.reduce((s, t) => s + Number(t.amount), 0), count: bt.length };
+    });
+  }, [showBreakdown, branches, transfers]);
 
   const fetchData = useCallback(async () => {
     if (selectedBranchIds.length === 0) return;
@@ -93,6 +104,26 @@ export default function HomeScreen() {
               total={todayTotal}
               label={isCollaborator ? 'Mi total de hoy' : undefined}
             />
+            {showBreakdown && (
+              <>
+                <Text style={styles.breakdownHeader}>Hoy por sucursal:</Text>
+                {branchStats.map((s) => {
+                  const pct = todayTotal > 0 ? Math.round((s.total / todayTotal) * 100) : null;
+                  return (
+                    <View key={s.id} style={styles.breakdownCard}>
+                      <View>
+                        <Text style={styles.breakdownName}>{s.name}</Text>
+                        <Text style={styles.breakdownCount}>{s.count} transferencias</Text>
+                      </View>
+                      <View style={styles.breakdownRight}>
+                        <Text style={styles.breakdownTotal}>{formatCOP(s.total)}</Text>
+                        <Text style={styles.breakdownPct}>{pct !== null ? `${pct}%` : '—'}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </>
+            )}
             <Text style={styles.sectionHeader}>
               {isCollaborator ? 'Mis transferencias de hoy:' : 'Transacciones de hoy:'}
             </Text>
@@ -138,5 +169,48 @@ const styles = StyleSheet.create({
     color: colors.secondary,
     textAlign: 'center',
     marginTop: 40,
+  },
+  breakdownHeader: {
+    fontFamily: fonts.semiBold,
+    fontSize: sf(14),
+    color: colors.secondary,
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  breakdownCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.card,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+    ...shadows.soft,
+  },
+  breakdownName: {
+    fontFamily: fonts.medium,
+    fontSize: sf(16),
+    color: colors.primary,
+  },
+  breakdownCount: {
+    fontFamily: fonts.regular,
+    fontSize: sf(13),
+    color: colors.secondary,
+    marginTop: 2,
+  },
+  breakdownRight: {
+    alignItems: 'flex-end',
+  },
+  breakdownTotal: {
+    fontFamily: fonts.semiBold,
+    fontSize: sf(16),
+    color: colors.primary,
+  },
+  breakdownPct: {
+    fontFamily: fonts.regular,
+    fontSize: sf(13),
+    color: colors.secondary,
+    marginTop: 2,
   },
 });

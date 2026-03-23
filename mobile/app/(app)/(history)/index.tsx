@@ -15,11 +15,12 @@ import { Transfer } from '@/types/database';
 import TransferCard from '@/components/TransferCard';
 import AppHeader from '@/components/AppHeader';
 import HistoryDashboard from '@/components/HistoryDashboard';
-import { colors, fonts, formatCOP, sf } from '@/lib/theme';
+import { colors, fonts, formatCOP, radii, shadows, sf } from '@/lib/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Period, getPeriodInfo, buildChartBars } from '@/lib/history-utils';
 
 type Section = { title: string; total: number; data: Transfer[] };
+type BranchStat = { id: string; name: string; total: number; count: number };
 
 function groupByDate(transfers: Transfer[]): Section[] {
   const map = new Map<string, Transfer[]>();
@@ -49,9 +50,10 @@ function groupByDate(transfers: Transfer[]): Section[] {
 
 export default function HistoryScreen() {
   const router = useRouter();
-  const { selectedBranchIds } = useBranch();
+  const { selectedBranchIds, branches, isAllBranches } = useBranch();
   const { currentBusinessUser, session } = useAuth();
   const isCollaborator = currentBusinessUser?.role !== 'admin';
+  const showBreakdown = !isCollaborator && isAllBranches && branches.length > 1;
   const [period, setPeriod] = useState<Period>('day');
   const [offset, setOffset] = useState(0);
   const [allFetched, setAllFetched] = useState<Transfer[]>([]);
@@ -123,6 +125,14 @@ export default function HistoryScreen() {
 
   const sections = useMemo(() => groupByDate(listTransfers), [listTransfers]);
 
+  const branchStats = useMemo<BranchStat[]>(() => {
+    if (!showBreakdown) return [];
+    return branches.map((b) => {
+      const bt = listTransfers.filter((t) => t.branch_id === b.id);
+      return { id: b.id, name: b.name, total: bt.reduce((s, t) => s + Number(t.amount), 0), count: bt.length };
+    });
+  }, [showBreakdown, branches, listTransfers]);
+
   const dashboard = (
     <HistoryDashboard
       period={period}
@@ -136,7 +146,7 @@ export default function HistoryScreen() {
       onPrev={() => setOffset((o) => o - 1)}
       onNext={() => setOffset((o) => Math.min(o + 1, 0))}
       showChart={!isCollaborator}
-      transferCount={isCollaborator ? listTransfers.length : undefined}
+      transferCount={isCollaborator || showBreakdown ? listTransfers.length : undefined}
     />
   );
 
@@ -162,6 +172,7 @@ export default function HistoryScreen() {
           <View style={styles.cardWrapper}>
             <TransferCard
               transfer={item}
+              branchName={showBreakdown ? branches.find((b) => b.id === item.branch_id)?.name : undefined}
               onPress={() => router.push({ pathname: '/(app)/transfer/confirm', params: { transferId: item.id, from: 'history' } })}
             />
           </View>
@@ -176,6 +187,26 @@ export default function HistoryScreen() {
         ListHeaderComponent={
           <View>
             {dashboard}
+            {showBreakdown && (
+              <View style={styles.breakdownSection}>
+                <Text style={styles.breakdownHeader}>Este período por sucursal:</Text>
+                {branchStats.map((s) => {
+                  const pct = total > 0 ? Math.round((s.total / total) * 100) : null;
+                  return (
+                    <View key={s.id} style={styles.breakdownCard}>
+                      <View>
+                        <Text style={styles.breakdownName}>{s.name}</Text>
+                        <Text style={styles.breakdownCount}>{s.count} transferencias</Text>
+                      </View>
+                      <View style={styles.breakdownRight}>
+                        <Text style={styles.breakdownTotal}>{formatCOP(s.total)}</Text>
+                        <Text style={styles.breakdownPct}>{pct !== null ? `${pct}%` : '—'}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
             <View style={styles.divider} />
           </View>
         }
@@ -236,6 +267,52 @@ const styles = StyleSheet.create({
   },
   cardWrapper: {
     marginBottom: 10,
+  },
+  breakdownSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+  },
+  breakdownHeader: {
+    fontFamily: fonts.semiBold,
+    fontSize: sf(14),
+    color: colors.secondary,
+    marginBottom: 10,
+  },
+  breakdownCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.card,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+    ...shadows.soft,
+  },
+  breakdownName: {
+    fontFamily: fonts.medium,
+    fontSize: sf(16),
+    color: colors.primary,
+  },
+  breakdownCount: {
+    fontFamily: fonts.regular,
+    fontSize: sf(13),
+    color: colors.secondary,
+    marginTop: 2,
+  },
+  breakdownRight: {
+    alignItems: 'flex-end',
+  },
+  breakdownTotal: {
+    fontFamily: fonts.semiBold,
+    fontSize: sf(16),
+    color: colors.primary,
+  },
+  breakdownPct: {
+    fontFamily: fonts.regular,
+    fontSize: sf(13),
+    color: colors.secondary,
+    marginTop: 2,
   },
   emptyText: {
     fontFamily: fonts.regular,

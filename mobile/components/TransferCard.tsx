@@ -4,6 +4,7 @@ import { colors, fonts, radii, shadows, sf, formatCOP } from '@/lib/theme';
 
 interface TransferCardProps {
   transfer: Transfer;
+  branchName?: string;
   onPress?: () => void;
 }
 
@@ -14,7 +15,7 @@ const providerLabels: Record<string, string> = {
 };
 
 
-export default function TransferCard({ transfer, onPress }: TransferCardProps) {
+export default function TransferCard({ transfer, branchName, onPress }: TransferCardProps) {
   const time = new Date(transfer.occurred_at).toLocaleTimeString('es-CO', {
     hour: '2-digit',
     minute: '2-digit',
@@ -28,6 +29,11 @@ export default function TransferCard({ transfer, onPress }: TransferCardProps) {
           {transfer.transaction_id ? (
             <Text style={styles.txnId} numberOfLines={1}>{transfer.transaction_id}</Text>
           ) : null}
+          {branchName && (
+            <View style={styles.branchTag}>
+              <Text style={styles.branchTagText}>{branchName}</Text>
+            </View>
+          )}
         </View>
         <View style={styles.right}>
           <Text style={styles.amount}>{formatCOP(transfer.amount)}</Text>
@@ -78,5 +84,18 @@ const styles = StyleSheet.create({
     fontSize: sf(14),
     color: colors.secondary,
     marginTop: 2,
+  },
+  branchTag: {
+    marginTop: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: '#E6FAF8',
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  branchTagText: {
+    fontFamily: fonts.medium,
+    fontSize: sf(12),
+    color: colors.success,
   },
 });
