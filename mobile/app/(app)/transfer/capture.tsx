@@ -1,34 +1,48 @@
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { TouchableOpacity, StyleSheet, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, fonts, radii, shadows } from '@/lib/theme';
+import { fonts } from '@/lib/theme';
 
 export default function CaptureScreen() {
   const router = useRouter();
+  const launched = useRef(false);
 
-  async function pickImage(useCamera: boolean) {
-    const permission = useCamera
-      ? await ImagePicker.requestCameraPermissionsAsync()
-      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+  useEffect(() => {
+    if (launched.current) return;
+    launched.current = true;
+    launchCamera();
+  }, []);
 
-    if (!permission.granted) {
-      Alert.alert('Permiso requerido', 'Necesitamos acceso para continuar');
-      return;
-    }
+  async function launchCamera() {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) return;
 
-    const result = useCamera
-      ? await ImagePicker.launchCameraAsync({
-          mediaTypes: ['images'],
-          quality: 0.8,
-        })
-      : await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ['images'],
-          quality: 0.8,
-        });
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+    });
 
     if (!result.canceled && result.assets[0]) {
-      router.push({
+      router.replace({
+        pathname: '/(app)/transfer/confirm',
+        params: { imageUri: result.assets[0].uri },
+      });
+    }
+  }
+
+  async function pickFromGallery() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) return;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      router.replace({
         pathname: '/(app)/transfer/confirm',
         params: { imageUri: result.assets[0].uri },
       });
@@ -37,36 +51,15 @@ export default function CaptureScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
-          <Text style={styles.backText}>Cancelar</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Cancel */}
+      <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()} activeOpacity={0.7}>
+        <Text style={styles.cancelText}>Cancelar</Text>
+      </TouchableOpacity>
 
-      <View style={styles.content}>
-        <Text style={styles.title}>Registrar transferencia</Text>
-        <Text style={styles.subtitle}>
-          Toma una foto o selecciona la captura de pantalla de la transferencia
-        </Text>
-
-        <TouchableOpacity
-          style={styles.optionCard}
-          onPress={() => pickImage(true)}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.optionIcon}>📷</Text>
-          <Text style={styles.optionText}>Tomar foto</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.optionCard}
-          onPress={() => pickImage(false)}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.optionIcon}>🖼️</Text>
-          <Text style={styles.optionText}>Seleccionar de galería</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Gallery icon — bottom left */}
+      <TouchableOpacity style={styles.galleryButton} onPress={pickFromGallery} activeOpacity={0.7}>
+        <Text style={styles.galleryIcon}>🖼️</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -74,50 +67,26 @@ export default function CaptureScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#000',
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+  cancelButton: {
+    position: 'absolute',
+    top: 56,
+    left: 20,
+    padding: 8,
   },
-  backText: {
+  cancelText: {
     fontFamily: fonts.medium,
     fontSize: 16,
-    color: colors.secondary,
+    color: '#fff',
   },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
+  galleryButton: {
+    position: 'absolute',
+    bottom: 48,
+    left: 32,
+    padding: 8,
   },
-  title: {
-    fontFamily: fonts.bold,
-    fontSize: 28,
-    color: colors.primary,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontFamily: fonts.regular,
-    fontSize: 16,
-    color: colors.secondary,
-    marginBottom: 40,
-  },
-  optionCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.card,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    marginBottom: 16,
-    ...shadows.soft,
-  },
-  optionIcon: {
-    fontSize: 28,
-  },
-  optionText: {
-    fontFamily: fonts.semiBold,
-    fontSize: 16,
-    color: colors.primary,
+  galleryIcon: {
+    fontSize: 32,
   },
 });
