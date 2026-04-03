@@ -1,7 +1,8 @@
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, ActionSheetIOS, Platform, Alert } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { colors, fonts, shadows, sf } from '@/lib/theme';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -13,6 +14,44 @@ const TAB_ICONS: Record<string, { default: IoniconsName; active: IoniconsName }>
 
 export default function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const router = useRouter();
+
+  async function pickFromGallery() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) return;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      router.push({
+        pathname: '/(app)/transfer/confirm',
+        params: { imageUri: result.assets[0].uri },
+      });
+    }
+  }
+
+  function onFabPress() {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancelar', 'Cámara', 'Galería'],
+          cancelButtonIndex: 0,
+        },
+        (index) => {
+          if (index === 1) router.push('/(app)/transfer/capture');
+          if (index === 2) pickFromGallery();
+        }
+      );
+    } else {
+      Alert.alert('Transferir', undefined, [
+        { text: 'Cámara', onPress: () => router.push('/(app)/transfer/capture') },
+        { text: 'Galería', onPress: pickFromGallery },
+        { text: 'Cancelar', style: 'cancel' },
+      ]);
+    }
+  }
 
   // Expo Router transforms `href: null` into `tabBarItemStyle: { display: 'none' }`
   const visibleRoutes = state.routes.filter(
@@ -64,7 +103,7 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
       {/* Floating Action Button */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push('/(app)/transfer/capture')}
+        onPress={onFabPress}
         activeOpacity={0.8}
       >
         <Ionicons name="scan-outline" size={28} color={colors.surface} />

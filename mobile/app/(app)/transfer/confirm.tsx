@@ -230,7 +230,7 @@ export default function ConfirmScreen() {
   }
 
   // ── Loading state (view mode) ──
-  if (isViewMode && viewLoading) {
+  if (isViewMode && (viewLoading || !viewTransfer)) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>

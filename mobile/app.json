@@ -14,7 +14,8 @@
       "backgroundColor": "#F3FBF5"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.qr-transfers"
     },
     "android": {
       "adaptiveIcon": {
